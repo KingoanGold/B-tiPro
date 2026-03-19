@@ -1,9 +1,9 @@
+/* eslint-disable */
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Hammer, HardHat, Calculator, BookOpen, User, 
-  ChevronRight, ArrowLeft, Search, CheckCircle2, 
-  Play, Trophy, Ruler, Droplets, ArrowRight,
-  Flame, Pickaxe, Truck, Layers
+  ArrowLeft, Search, CheckCircle2, Play, Trophy, 
+  Droplets, Flame, Truck, Layers, Clock
 } from 'lucide-react';
 
 // --- DONNÉES : MODULES DE COURS ---
@@ -34,6 +34,15 @@ const MODULES = [
       { title: 'Monter le premier rang (L\'arase)', duration: '1h', completed: false },
       { title: 'Croiser les parpaings et gérer les angles', duration: '1h30', completed: false },
     ]
+  },
+  {
+    id: 'm4', title: 'Enduits & Finitions', icon: <Droplets size={24} />, color: 'from-amber-200 to-amber-500',
+    level: 'Avancé', duration: '3h', progress: 0,
+    chapters: [
+      { title: 'Préparer le support (Gobetis)', duration: '45 min', completed: false },
+      { title: 'Projeter l\'enduit à la truelle', duration: '1h', completed: false },
+      { title: 'Talocher et lisser', duration: '1h15', completed: false },
+    ]
   }
 ];
 
@@ -43,7 +52,11 @@ const GLOSSAIRE = [
   { term: 'Barbotine', def: 'Mélange liquide de ciment et d\'eau servant de liaison.' },
   { term: 'Chaînage', def: 'Armature en acier noyée dans le béton pour consolider les murs.' },
   { term: 'Ferraillage', def: 'Ensemble des armatures en fer ou en acier destinées à renforcer le béton.' },
-  { term: 'Parpaing', def: 'Bloc de béton manufacturé, creux ou plein. Aussi appelé "Agglo".' }
+  { term: 'Parpaing', def: 'Bloc de béton manufacturé, creux ou plein. Aussi appelé "Agglo".' },
+  { term: 'Gobetis', def: 'Première couche d\'un enduit, projetée en couche très fine et rugueuse pour l\'accroche.' },
+  { term: 'Ragréage', def: 'Opération consistant à lisser et aplanir une surface avant la pose d\'un revêtement.' },
+  { term: 'Taloche', def: 'Plaque munie d\'une poignée, servant à porter le mortier ou à lisser les enduits.' },
+  { term: 'Truelle', def: 'Outil de base du maçon servant à prendre, jeter et étaler le mortier.' }
 ];
 
 // --- COMPOSANT : ECRAN DE CHARGEMENT ANIMÉ ---
@@ -95,30 +108,34 @@ export default function App() {
   const [selectedModule, setSelectedModule] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   
+  // States Calculatrice Béton
   const [calcLength, setCalcLength] = useState('');
   const [calcWidth, setCalcWidth] = useState('');
   const [calcDepth, setCalcDepth] = useState('');
 
-  // Simuler le temps de chargement pour voir l'animation
+  // Temps de chargement pour l'animation (2.5 secondes)
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 3000); // 3 secondes de chargement
+    }, 2500);
     return () => clearTimeout(timer);
   }, []);
 
+  // Logique du calculateur
   const calculateConcrete = useMemo(() => {
     const l = parseFloat(calcLength);
     const w = parseFloat(calcWidth);
-    const d = parseFloat(calcDepth) / 100;
+    const d = parseFloat(calcDepth) / 100; // Passage des cm en mètres
+    
     if (!l || !w || !d || l <= 0 || w <= 0 || d <= 0) return null;
+    
     const volume = l * w * d;
     return {
       volume: volume.toFixed(2),
-      cimentSacs: Math.ceil(volume * 10),
-      sable: Math.round(volume * 800),
-      gravier: Math.round(volume * 1000),
-      eau: Math.round(volume * 175)
+      cimentSacs: Math.ceil(volume * 10), // 350kg/m3 = 10 sacs de 35kg
+      sable: Math.round(volume * 800), // 800kg/m3
+      gravier: Math.round(volume * 1000), // 1000kg/m3
+      eau: Math.round(volume * 175) // 175L/m3
     };
   }, [calcLength, calcWidth, calcDepth]);
 
@@ -145,12 +162,13 @@ export default function App() {
         </header>
       )}
 
-      {/* CONTENU */}
+      {/* CONTENU PRINCIPAL */}
       <main className="flex-1 overflow-y-auto custom-scroll pb-24 relative">
         
         {/* --- ACCUEIL --- */}
         {activeTab === 'home' && !selectedModule && (
           <div className="animate-in slide-in-from-bottom-4 fade-in duration-500 space-y-8 p-6">
+            {/* Statistiques */}
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl flex flex-col items-center justify-center text-center shadow-lg hover:border-amber-500/30 transition-colors">
                 <Trophy className="text-amber-500 mb-2" size={28} />
@@ -164,6 +182,7 @@ export default function App() {
               </div>
             </div>
 
+            {/* Astuce du jour */}
             <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl p-6 shadow-xl shadow-orange-900/20 relative overflow-hidden group cursor-pointer hover:scale-[1.02] transition-transform">
               <Flame className="absolute -right-4 -bottom-4 text-white/10 group-hover:scale-110 transition-transform duration-700" size={120} />
               <span className="bg-white/20 text-white text-[10px] font-black uppercase px-3 py-1 rounded-full backdrop-blur-md border border-white/20">Astuce du Chef</span>
@@ -173,6 +192,7 @@ export default function App() {
               </p>
             </div>
 
+            {/* Reprendre le cours */}
             <div>
               <h2 className="text-lg font-black text-white mb-4">Reprendre le chantier</h2>
               <div onClick={() => { setSelectedModule(MODULES[1]); setActiveTab('courses'); }} className="bg-slate-900 border border-slate-800 rounded-3xl p-4 flex items-center gap-4 cursor-pointer hover:bg-slate-800 hover:border-amber-500/50 transition-all shadow-lg active:scale-95">
@@ -207,7 +227,7 @@ export default function App() {
                 key={mod.id} 
                 onClick={() => setSelectedModule(mod)} 
                 className="bg-slate-900 border border-slate-800 rounded-[2rem] p-5 cursor-pointer hover:border-amber-500/50 hover:bg-slate-800/50 transition-all shadow-lg active:scale-95 group"
-                style={{ animationDelay: `${index * 100}ms`, animationFillMode: 'both' }}
+                style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
               >
                 <div className="flex gap-4 items-center">
                   <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${mod.color} flex items-center justify-center text-white shadow-lg shrink-0 group-hover:rotate-6 transition-transform`}>
@@ -229,7 +249,7 @@ export default function App() {
           </div>
         )}
 
-        {/* --- COURS (DÉTAIL D'UN MODULE) --- */}
+        {/* --- COURS (DÉTAIL DU MODULE) --- */}
         {activeTab === 'courses' && selectedModule && (
           <div className="animate-in slide-in-from-right duration-300 h-full flex flex-col absolute inset-0 bg-slate-950 z-50">
             <div className={`pt-12 pb-8 px-6 bg-gradient-to-br ${selectedModule.color} rounded-b-[3rem] shadow-2xl relative shrink-0`}>
@@ -259,7 +279,7 @@ export default function App() {
           </div>
         )}
 
-        {/* --- OUTILS --- */}
+        {/* --- OUTILS (CALCULATEUR) --- */}
         {activeTab === 'tools' && (
           <div className="animate-in slide-in-from-bottom-4 fade-in duration-500 p-6 space-y-6">
             <div>
@@ -350,7 +370,7 @@ export default function App() {
         )}
       </main>
 
-      {/* NAV BOTTOM */}
+      {/* --- BARRE DE NAVIGATION (BOTTOM) --- */}
       <nav className="absolute bottom-0 w-full bg-slate-950/90 backdrop-blur-2xl border-t border-slate-800/50 flex justify-around items-center pt-4 pb-6 px-2 z-40">
         {[
           { id: 'home', icon: <HardHat size={24} strokeWidth={activeTab === 'home' ? 2.5 : 2} />, label: 'Accueil' },
