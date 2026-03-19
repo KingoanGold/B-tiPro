@@ -5,7 +5,7 @@ import {
   ArrowLeft, CheckCircle2, Play, Trophy, 
   Droplets, Truck, Layers, Clock, Box, Grid,
   Shield, Map, Paintbrush, Ruler, Medal, Pencil,
-  X, Check, Wrench, Pickaxe, DoorOpen
+  X, Check
 } from 'lucide-react';
 
 // ==========================================
@@ -25,7 +25,7 @@ const MODULES = [
     ]
   },
   {
-    id: 'm2', title: 'L\'Outillage du Maçon', icon: <Wrench size={24} />, color: 'from-slate-500 to-slate-700',
+    id: 'm2', title: 'L\'Outillage du Maçon', icon: <Hammer size={24} />, color: 'from-slate-500 to-slate-700',
     level: 'Débutant', duration: '2h',
     chapters: [
       { id: 'm2c1', title: 'Les outils à main (Truelles, Taloches)', duration: '20 min', content: "La truelle ronde sert à gâcher, la truelle carrée à dresser. La taloche (bois/plastique) porte le mortier. Le gratton sert à finir les enduits. Nettoyez-les à l'eau immédiatement après usage, le ciment sec pardonne peu." },
@@ -45,7 +45,7 @@ const MODULES = [
     ]
   },
   {
-    id: 'm4', title: 'Terrassement & Fondations', icon: <Pickaxe size={24} />, color: 'from-stone-600 to-stone-900',
+    id: 'm4', title: 'Terrassement & Fondations', icon: <Truck size={24} />, color: 'from-stone-600 to-stone-900',
     level: 'Intermédiaire', duration: '4h',
     chapters: [
       { id: 'm4c1', title: 'Nature des sols et Étude G2', duration: '30 min', content: "On ne construit pas sur de la terre végétale ou de l'argile gonflante. L'étude de sol (G2) définit la profondeur du 'bon sol' (le refus). Un sol sableux draine bien, un sol argileux retient l'eau et nécessite des fondations spécifiques." },
@@ -108,7 +108,7 @@ const MODULES = [
     ]
   },
   {
-    id: 'm10', title: 'Les Ouvertures (Linteaux, Appuis)', icon: <DoorOpen size={24} />, color: 'from-purple-600 to-purple-800',
+    id: 'm10', title: 'Les Ouvertures (Linteaux, Appuis)', icon: <Box size={24} />, color: 'from-purple-600 to-purple-800',
     level: 'Avancé', duration: '3h',
     chapters: [
       { id: 'm10c1', title: 'Le Linteau en blocs U', duration: '30 min', content: "La poutre au-dessus de la fenêtre. On utilise des blocs en 'U' posés sur une planche étayée. On y place une armature spécifique (chaînage triangulaire ou fers tordus) reposant sur les murs porteurs, puis on coule le béton." },
@@ -170,10 +170,9 @@ const LoadingScreen = () => (
   <div className="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center z-[999] overflow-hidden">
     <div className="w-16 h-16 border-4 border-slate-800 border-t-amber-500 rounded-full animate-spin mb-6"></div>
     <h2 className="text-amber-500 font-black text-xl tracking-widest uppercase animate-pulse">Coulage des 50 leçons...</h2>
-  </div>
-);
+  </
 
-// ==========================================
+  // ==========================================
 // DÉBUT DE LA PARTIE 2 (Composant Principal)
 // ==========================================
 
