@@ -1,1771 +1,373 @@
-/* eslint-disable */
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { initializeApp, getApps } from 'firebase/app';
-import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
-  getFirestore, doc, setDoc, collection, 
-  onSnapshot, updateDoc, arrayUnion, addDoc, deleteDoc,
-  query, where, getDocs, orderBy, limit
-} from 'firebase/firestore';
-import { 
-  Heart, Flame, Plus, Sparkles, ChevronRight, 
-  Search, Info, Users, ArrowLeft, Gamepad2, 
-  Star, Dices, Lock, Activity, Wind, BookOpen, 
-  Compass, User, Shield, EyeOff, Eye, Calendar, 
-  MessageCircle, Filter, Music, CheckCircle2, 
-  Shuffle, RefreshCw, Edit2, Timer, Gift, Zap, 
-  Trash2, Edit3, FolderPlus, BellRing, HeartHandshake,
-  CalendarHeart, Send, LogIn, MessageSquare, Smartphone,
-  AlertTriangle, Lightbulb, Camera, Upload, Clock, X, 
-  Image as ImageIcon, Key, Unlock, ImagePlus, Check
+  Hammer, HardHat, Calculator, BookOpen, User, 
+  ChevronRight, ArrowLeft, Search, CheckCircle2, 
+  Play, Trophy, Ruler, Droplets, ArrowRight,
+  Flame, Pickaxe, Truck, Layers
 } from 'lucide-react';
 
-// --- CONFIGURATION FIREBASE ULTRA-SÉCURISÉE (ANTI-CRASH) ---
-let firebaseConfig;
-try {
-  if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-    firebaseConfig = typeof __firebase_config === 'string' ? JSON.parse(__firebase_config) : __firebase_config;
-  } else {
-    throw new Error("Config absente");
-  }
-} catch (error) {
-  firebaseConfig = {
-    apiKey: "AIzaSyCY-gRv2rOrLy8LgxHn5cyd5937jXmrypw",
-    authDomain: "kamasync-52671.firebaseapp.com",
-    projectId: "kamasync-52671",
-    storageBucket: "kamasync-52671.firebasestorage.app",
-    messagingSenderId: "211532217086",
-    appId: "1:211532217086:web:7a6ed699c878c6995303af",
-    measurementId: "G-Q7M6LE859T"
-  };
-}
-
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'kamasync-ultra-v5';
-
-// --- CATÉGORIES DE BASE ---
-const CATEGORIES = [
-  { id: 'Face à face', icon: <Users size={14}/>, color: 'from-blue-500/20 to-blue-900/20', text: 'text-blue-400' },
-  { id: 'Par derrière', icon: <Flame size={14}/>, color: 'from-orange-500/20 to-orange-900/20', text: 'text-orange-400' },
-  { id: 'Au-dessus', icon: <Activity size={14}/>, color: 'from-rose-500/20 to-rose-900/20', text: 'text-rose-400' },
-  { id: 'De côté', icon: <Heart size={14}/>, color: 'from-pink-500/20 to-pink-900/20', text: 'text-pink-400' },
-  { id: 'Debout & Acrobatique', icon: <Wind size={14}/>, color: 'from-emerald-500/20 to-emerald-900/20', text: 'text-emerald-400' },
-  { id: 'Sur Mobilier', icon: <Gamepad2 size={14}/>, color: 'from-purple-500/20 to-purple-900/20', text: 'text-purple-400' },
-  { id: 'Oral & Préliminaires', icon: <Sparkles size={14}/>, color: 'from-amber-500/20 to-amber-900/20', text: 'text-amber-400' },
-  { id: 'Angles & Tweaks', icon: <Lock size={14}/>, color: 'from-cyan-500/20 to-cyan-900/20', text: 'text-cyan-400' },
-  { id: 'Sensorielles', icon: <Star size={14}/>, color: 'from-indigo-500/20 to-indigo-900/20', text: 'text-indigo-400' }
-];
-
-const MOODS = [
-  { id: 'romantic', label: 'Câlin & Doux', icon: '☁️', color: 'bg-pink-500/20 text-pink-400 border-pink-500/30' },
-  { id: 'playful', label: 'Humeur Joueuse', icon: '🎲', color: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },
-  { id: 'wild', label: 'Très Sauvage', icon: '🔥', color: 'bg-rose-500/20 text-rose-500 border-rose-500/30' },
-  { id: 'tired', label: 'Pas ce soir', icon: '💤', color: 'bg-slate-500/20 text-slate-400 border-slate-500/30' }
-];
-
-// --- NOUVEAU : QUESTIONS DU JOUR (RITUEL QUOTIDIEN) ---
-const DAILY_QUESTIONS = [
-  "Quel est le souvenir intime le plus marquant que tu as avec moi ?",
-  "Si on devait le faire dans un endroit insolite aujourd'hui, ce serait où ?",
-  "Quelle tenue aimerais-tu me voir porter ce soir ?",
-  "Quelle est la partie de mon corps que tu préfères caresser ?",
-  "Raconte-moi un rêve érotique que tu as fait (avec ou sans moi).",
-  "Quel est le préliminaire qui te fait craquer à tous les coups ?",
-  "Y a-t-il une position du catalogue que tu meurs d'envie d'essayer ?",
-  "Quelle est la chose la plus excitante que je t'ai dite pendant l'amour ?",
-  "Si tu devais me donner un ordre au lit ce soir, quel serait-il ?",
-  "Qu'est-ce qui te donne le plus envie de moi en pleine journée ?"
-];
-
-const GAMES_DATA = {
-  truths: [
-    "Quel est ton fantasme le plus inavoué ?", "Quelle partie de mon corps préfères-tu ?", "Raconte-moi le rêve le plus érotique que tu aies fait.",
-    "Quel est le lieu le plus risqué où tu aimerais faire l'amour ?", "As-tu déjà pensé à moi dans une situation inappropriée ?",
-    "Quelle est la chose la plus folle que tu aimerais que je te fasse ?", "Si tu devais choisir un seul jouet sexuel pour le reste de ta vie, ce serait quoi ?",
-    "Préfères-tu dominer ou être dominé(e) ?", "Quelle est ta position préférée et pourquoi ?", "As-tu un fétichisme secret ?"
-  ],
-  dares: [
-    "Masse-moi le dos pendant 3 minutes avec de l'huile ou de la crème.", "Embrasse-moi dans le cou avec un glaçon.",
-    "Bande-moi les yeux et fais-moi deviner ce que tu manges ou bois.", "Fais-moi un strip-tease sensuel sur une musique de mon choix.",
-    "Embrasse passionnément chaque centimètre de mon ventre.", "Enlève un de mes vêtements en utilisant uniquement tes dents.",
-    "Masse l'intérieur de mes cuisses sans toucher mon sexe pendant 2 minutes.", "Attache mes mains et fais ce que tu veux pendant 3 minutes."
-  ],
-  diceActions: ["Lécher", "Masser", "Caresser", "Embrasser", "Mordiller", "Souffler sur", "Sucer", "Titiller avec la langue", "Effleurer"],
-  diceZones: ["le Cou", "le Ventre", "l'Intérieur des Cuisses", "le Dos", "les Lèvres", "la Nuque", "les Seins / Pectoraux", "le Sexe", "le Creux des reins"],
-  diceDurations: ["pendant 30 secondes.", "pendant 1 minute.", "pendant 2 minutes.", "jusqu'à ce que je te supplie d'arrêter.", "les yeux fermés."],
-  scenPlaces: ["Dans la douche", "Sur la table du salon", "Enfermés dans la chambre", "Dans la cuisine", "Contre un mur"],
-  scenRoles: ["Des inconnus dans un bar", "Un massage qui dérape", "Professeur et élève", "Cambrioleur et propriétaire", "Médecin et patient"],
-  scenTwists: ["Avec un bandeau sur les yeux", "Sans utiliser les mains", "Dans le silence total", "La lumière doit rester allumée", "En écoutant une musique classique très fort"],
-  rouletteTasks: [
-    "Dégustation à l'aveugle : Fais-moi goûter 3 choses.",
-    "Exploration tactile : Caresses avec une plume ou un tissu doux.",
-    "Contraste thermique : Souffle chaud et glaçon sur le torse.",
-    "Le jeu du miroir : Place-nous devant un miroir.",
-    "Baisers interdits : Embrasse tout mon corps SAUF mes lèvres."
-  ],
-  secretChallenges: [
-    "Porte des sous-vêtements sexy dehors sans me le dire.",
-    "Envoie-moi un message explicite quand je ne m'y attends pas.",
-    "Ce soir, prends totalement les commandes au lit.",
-    "Glisse un mot coquin dans ma poche aujourd'hui."
-  ]
-};
-
-const TIPS_DATA = [
+// --- DONNÉES : MODULES DE COURS ---
+const MODULES = [
   {
-    id: 't1', title: "Le consentement, moteur du désir", cat: "Communication", icon: <Shield/>, time: "2 min",
-    content: "Le consentement n'est pas juste un 'oui' au début, c'est un dialogue continu. Vérifier si l'autre apprécie, demander 'tu aimes ça ?' ou 'je peux aller plus vite ?' n'est pas un tue-l'amour, au contraire ! C'est ce qui permet de s'abandonner totalement en sachant qu'on est en sécurité. N'hésitez pas à instaurer un 'Safe Word' (mot de sécurité) pour vos jeux les plus intenses."
+    id: 'm1', title: 'Les Bases & La Sécurité', icon: <HardHat size={24} />, color: 'from-amber-500 to-orange-600',
+    level: 'Débutant', duration: '2h', progress: 100,
+    chapters: [
+      { title: 'Équipement de Protection Individuelle (EPI)', duration: '15 min', completed: true },
+      { title: 'Lire un plan de base', duration: '45 min', completed: true },
+      { title: 'Les outils du maçon', duration: '30 min', completed: true },
+    ]
   },
   {
-    id: 't2', title: "La Musique idéale pour le lit", cat: "Sensorielles", icon: <Music/>, time: "4 min",
-    content: "La musique peut transformer une expérience banale en un moment magique. Voici nos conseils :\n\n1. Le Tempo magique (BPM) : Cherchez des musiques entre 60 et 80 BPM. Cela s'aligne sur le rythme cardiaque au repos, aidant vos corps à se synchroniser.\n2. Pas de paroles : Préférez l'instrumental (Lo-Fi, Trip-Hop, Jazz lent). Les paroles sollicitent la partie analytique du cerveau.\n3. Évitez le mode 'Aléatoire' : Créez une playlist qui évolue. Douce au début, avec un rythme qui s'intensifie, avant de redescendre pour l'aftercare."
+    id: 'm2', title: 'Fondations & Dalles', icon: <Layers size={24} />, color: 'from-stone-500 to-stone-700',
+    level: 'Intermédiaire', duration: '4h', progress: 30,
+    chapters: [
+      { title: 'Préparation du terrain et décaissement', duration: '40 min', completed: true },
+      { title: 'Le ferraillage et le treillis soudé', duration: '1h', completed: false },
+      { title: 'Couler une dalle béton de niveau', duration: '1h30', completed: false },
+    ]
   },
   {
-    id: 't3', title: "Réussir les positions debout", cat: "Pratique", icon: <Wind/>, time: "3 min",
-    content: "Les positions debout ou acrobatiques nécessitent quelques précautions pour éviter les accidents.\n\n1. L'adhérence : Ne le faites pas en chaussettes sur du parquet ou dans une douche sans tapis antidérapant.\n2. La hauteur : Si vous devez porter votre partenaire, utilisez un meuble (lit, table) comme appui de départ pour soulager votre dos.\n3. La communication : Si les muscles tremblent, dites-le immédiatement. Il n'y a pas de honte à faire une pause."
-  },
-  {
-    id: 't4', title: "L'art délicat de l'Aftercare", cat: "Émotionnel", icon: <Heart/>, time: "3 min",
-    content: "L'aftercare (les soins post-coïtaux) est crucial, surtout après un rapport intense. Lors de l'orgasme, le cerveau libère un cocktail d'hormones (ocytocine, dopamine) qui retombe brutalement ensuite. Pour éviter le 'blues post-sexe' :\n\n- Restez enlacés quelques minutes en silence.\n- Apportez un verre d'eau ou une petite collation.\n- Échangez des mots doux ou valorisants sur ce que vous venez de vivre.\n- Préparez une serviette tiède pour vous nettoyer mutuellement avec tendresse."
-  },
-  {
-    id: 't5', title: "Dirty Talk : Comment oser se lancer", cat: "Communication", icon: <MessageCircle/>, time: "4 min",
-    content: "Le 'Dirty Talk' (parler cru) intimide souvent. Le secret est d'y aller par étapes :\n\n1. Le constat : Décrivez simplement ce que vous ressentez. 'J'adore quand tu fais ça', 'Ta peau est si chaude'.\n2. L'instruction : Donnez des directives douces. 'Plus vite', 'Regarde-moi quand tu le fais'.\n3. L'anticipation : Décrivez ce que vous allez faire. 'Je vais t'embrasser partout jusqu'à ce que tu n'en puisses plus'.\nL'important est d'utiliser un vocabulaire avec lequel vous êtes tous les deux à l'aise."
-  },
-  {
-    id: 't6', title: "Les zones érogènes méconnues", cat: "Sensorielles", icon: <Sparkles/>, time: "5 min",
-    content: "Ne foncez pas directement vers les zones génitales ! Prenez le temps d'explorer ces zones souvent oubliées :\n\n- Le cuir chevelu : Un massage appuyé libère énormément de tensions.\n- Le creux des genoux et l'intérieur des poignets : La peau y est très fine et sensible.\n- La nuque et le cou : Un souffle chaud ou de légers mordillements y font des merveilles.\n- Le bas du ventre : Tracer des lignes imaginaires juste au-dessus du pubis rend l'attente insoutenable."
-  },
-  {
-    id: 't7', title: "Introduire des jouets dans le couple", cat: "Pratique", icon: <Zap/>, time: "4 min",
-    content: "Un sex-toy ne remplace pas un partenaire, c'est un outil pour explorer de nouvelles sensations ensemble.\n\n- Dédiabolisez l'objet : Faites du shopping en ligne à deux pour choisir votre premier jouet.\n- Commencez petit : Un anneau vibrant ou un petit stimulateur clitoridien (bullet) est parfait pour débuter sans intimider.\n- Guidez l'autre : C'est encore plus excitant quand c'est le partenaire qui contrôle le jouet sur vous."
-  },
-  {
-    id: 't8', title: "L'art du Teasing (Faire monter le désir)", cat: "Préliminaires", icon: <Timer/>, time: "3 min",
-    content: "Le sexe commence bien avant d'être dans la chambre. L'anticipation est le plus grand des aphrodisiaques :\n\n- Le matin : Laissez un post-it suggestif sur le miroir de la salle de bain.\n- La journée : Envoyez un message décrivant ce que vous portez ou ce que vous comptez lui faire le soir.\n- Le soir : Frôlez-vous dans la cuisine, embrassez-vous dans le cou, mais refusez d'aller plus loin... pour l'instant. Faites durer la frustration exquise."
-  },
-  {
-    id: 't9', title: "Jeux de température : Le Feu et la Glace", cat: "Sensorielles", icon: <Flame/>, time: "3 min",
-    content: "Jouer avec le chaud et le froid réveille les terminaisons nerveuses :\n\n- Le froid : Passez un glaçon sur les lèvres de votre partenaire, le long de sa colonne vertébrale, ou gardez-le en bouche pendant le sexe oral (frissons garantis).\n- Le chaud : Utilisez de l'huile de massage chauffante ou buvez une gorgée de thé/café chaud avant d'embrasser le cou ou le ventre de votre partenaire.\n- Le contraste : Alternez immédiatement le souffle chaud de votre bouche après le passage du glaçon."
-  },
-  {
-    id: 't10', title: "Initiation au Bondage Léger", cat: "Découverte", icon: <Lock/>, time: "4 min",
-    content: "Attacher son partenaire (ou l'être) crée un abandon total très excitant. Pour débuter sereinement :\n\n- N'utilisez jamais de menottes en métal (risque de blessure sans clé). Préférez des foulards en soie, des cravates souples ou des menottes en velcro.\n- Gardez toujours des ciseaux à bouts ronds à portée de main en cas de panique.\n- Ne laissez jamais la personne attachée seule dans la pièce.\n- Fixez un 'Safe Word' (ex: 'Rouge') qui stoppe instantanément le jeu si l'un de vous est mal à l'aise."
-  },
-  {
-    id: 't11', title: "Créer l'ambiance parfaite", cat: "Général", icon: <Star/>, time: "2 min",
-    content: "L'environnement joue un rôle clé dans la capacité à lâcher prise :\n\n- L'éclairage : Fuyez les plafonniers ! Préférez une lumière tamisée, chaude (lampes de chevet, guirlandes) ou la lueur vacillante de quelques bougies.\n- L'ordre : Un lit défait avec des draps propres, c'est sexy. Des vêtements sales qui traînent au sol, ça l'est moins. Dégagez l'espace.\n- L'odeur : Aérez la pièce, utilisez un léger parfum d'ambiance ou de l'encens, mais sans excès."
-  },
-  {
-    id: 't12', title: "Le pouvoir du regard", cat: "Connexion", icon: <Eye/>, time: "3 min",
-    content: "Le contact visuel est souvent sous-estimé car il rend très vulnérable. Pourtant, c'est l'outil de connexion ultime :\n\n- Pendant l'acte : Essayez de garder les yeux ouverts et de fixer ceux de votre partenaire pendant plusieurs minutes consécutives. La sensation de fusion est vertigineuse.\n- Le miroir : Placez-vous devant un miroir pour vous regarder faire l'amour. Le côté voyeuriste de votre propre couple est un puissant déclencheur."
-  },
-  {
-    id: 't13', title: "La liste Oui / Non / Peut-être", cat: "Communication", icon: <CheckCircle2/>, time: "3 min",
-    content: "C'est un exercice génial pour les couples ! Imprimez chacun une liste détaillée de pratiques sexuelles. \n- Cochez 'Oui' (J'ai envie), 'Non' (C'est hors limite) ou 'Peut-être' (J'y réfléchis si on m'accompagne bien).\n- Comparez ensuite vos listes avec bienveillance. Vous découvrirez souvent que vous avez des fantasmes communs inavoués dans la colonne 'Peut-être' ou 'Oui' !"
-  },
-  {
-    id: 't14', title: "Massage sensuel : Les règles d'or", cat: "Préliminaires", icon: <Activity/>, time: "4 min",
-    content: "Un massage sensuel n'est pas un massage thérapeutique. L'objectif est l'effleurement :\n\n- Utilisez de l'huile (préalablement réchauffée dans vos mains).\n- Ne soyez pas pressé : commencez par les épaules, descendez lentement vers les lombaires, massez les mollets et les pieds.\n- La règle d'or : Interdiction stricte de toucher les zones érogènes primaires (sexe, poitrine) pendant les 10 premières minutes. Le désir va grimper en flèche."
-  },
-  {
-    id: 't15', title: "Gérer les pannes et les moments gênants", cat: "Général", icon: <Info/>, time: "3 min",
-    content: "Le sexe, ce n'est pas comme dans les films. Il y a des bruits bizarres, des crampes, des pannes d'érection ou des pertes de lubrification. C'est NORMAL.\n\n- Le rire est votre meilleur allié. Une crampe au mollet ? Riez-en ensemble, massez-la, et reprenez.\n- Une baisse de régime ? Ne focalisez pas dessus. Redescendez d'un cran : retournez aux caresses, aux baisers, sans obligation de résultat.\n- La pression de la performance est le pire ennemi de l'érection et du désir."
+    id: 'm3', title: 'Élévation de Murs', icon: <Hammer size={24} />, color: 'from-orange-600 to-red-700',
+    level: 'Intermédiaire', duration: '5h', progress: 0,
+    chapters: [
+      { title: 'Préparer son mortier de montage', duration: '30 min', completed: false },
+      { title: 'Monter le premier rang (L\'arase)', duration: '1h', completed: false },
+      { title: 'Croiser les parpaings et gérer les angles', duration: '1h30', completed: false },
+    ]
   }
 ];
 
-const POSITIONS_DATA = [
-  { n: "Le Missionnaire (L'indémodable)", c: "Face à face", d: 1, s: 1, desc: "Le partenaire A s'allonge sur le dos, les jambes légèrement écartées. Le partenaire B se place au-dessus en appui sur les mains ou les avant-bras. Leurs bassins s'emboîtent parfaitement, favorisant l'intimité et les baisers.", v: "Variante : Le partenaire A referme complètement ses jambes autour de celles du partenaire B pour augmenter les frictions." },
-  { n: "Le Missionnaire surélevé", c: "Face à face", d: 2, s: 2, desc: "Position classique du missionnaire, mais les jambes du partenaire allongé reposent sur les épaules de celui qui est au-dessus. Cela ouvre grand le bassin et permet une pénétration bien plus profonde.", v: "Variante : Glissez un gros coussin sous les fesses du partenaire allongé pour basculer le bassin et cibler la paroi antérieure." },
-  { n: "L'Enclume", c: "Face à face", d: 3, s: 4, desc: "Le partenaire allongé sur le dos bascule son bassin vers le haut et replie ses genoux près de ses propres oreilles. L'autre partenaire se place à genoux face à lui pour un angle d'entrée très plongeant.", v: "Variante : Le partenaire du dessus peut attraper les chevilles du receveur pour guider le rythme." },
-  { n: "Le Coquillage", c: "Face à face", d: 3, s: 3, desc: "Le partenaire allongé replie ses cuisses serrées contre son propre buste. Le partenaire actif se penche en avant en l'enveloppant de tout son corps, créant une bulle intime et étroite.", v: "Variante : Maintenez un contact visuel ininterrompu à quelques centimètres du visage." },
-  { n: "La Fleur de Lotus", c: "Face à face", d: 3, s: 3, desc: "Les deux partenaires sont assis face à face, le partenaire B s'asseyant sur les genoux du partenaire A en enroulant ses jambes derrière son dos. Idéal pour des mouvements lents de balancier.", v: "Variante : Synchronisez votre respiration en collant vos fronts l'un contre l'autre." },
-  { n: "Le Papillon", c: "Face à face", d: 3, s: 4, desc: "Le partenaire A s'allonge au bord du lit, les fesses au bord du vide, jambes écartées. Le partenaire B se tient debout devant, profitant d'un effet de levier idéal.", v: "Variante : Le partenaire debout peut glisser ses mains sous les hanches du partenaire allongé pour le surélever à chaque mouvement." },
-  { n: "L'Araignée", c: "Face à face", d: 4, s: 4, desc: "Les deux partenaires sont assis face à face, en appui arrière sur leurs mains et leurs pieds. Leurs bassins se rejoignent au centre en lévitation.", v: "Variante : Alternez les mouvements d'avant en arrière comme une danse asymétrique." },
-  { n: "Le Missionnaire inversé", c: "Face à face", d: 2, s: 3, desc: "Similaire au missionnaire, mais c'est le partenaire du dessus qui garde les jambes serrées à l'intérieur de celles du partenaire allongé. Modifie complètement les points de pression.", v: "Variante : Le partenaire du dessus allonge tout son poids pour un contact peau à peau intégral." },
-  { n: "Le Wrap", c: "Face à face", d: 2, s: 3, desc: "Pendant un missionnaire classique, le partenaire allongé croise fermement ses chevilles dans le bas du dos du partenaire actif, le verrouillant contre lui.", v: "Variante : Serrez ou desserrez l'étreinte des jambes pour contrôler vous-même la profondeur." },
-  { n: "La Montagne Magique", c: "Face à face", d: 2, s: 2, desc: "Missionnaire où le partenaire allongé plie les genoux et pose ses pieds à plat sur le matelas, formant un pont. L'angle d'entrée devient légèrement ascendant.", v: "Variante : Le partenaire allongé pousse sur ses talons pour faire décoller son bassin à chaque va-et-vient." },
-  { n: "L'Étreinte du Panda", c: "Face à face", d: 2, s: 2, desc: "Assis confortablement face à face sur un grand canapé, le partenaire B blotti dans les bras du partenaire A, jambes de chaque côté des hanches.", v: "Variante : Mouvements circulaires du bassin très lents, axés sur la tendresse." },
-  { n: "L'Araignée Inversée", c: "Face à face", d: 4, s: 4, desc: "Assis face à face, les jambes de l'un passent sous les aisselles de l'autre. Une géométrie complexe qui stimule de nouvelles zones.", v: "Variante : L'un des partenaires s'allonge doucement en arrière tout en gardant l'emboîtement." },
-  { n: "La Levrette classique", c: "Par derrière", d: 2, s: 4, desc: "Le receveur se place à quatre pattes, dos cambré. Le partenaire se positionne derrière lui à genoux. Offre une pénétration très profonde et stimule l'instinct primal.", v: "Variante : Le partenaire arrière attrape les hanches pour guider l'impact." },
-  { n: "La Levrette plate", c: "Par derrière", d: 1, s: 3, desc: "Le partenaire A s'allonge complètement sur le ventre, jambes légèrement écartées. Le partenaire B s'allonge de tout son long par-dessus lui. Fortes frictions clitoridiennes/pubiennes.", v: "Variante : Glissez un petit coussin plat sous le bassin du partenaire allongé sur le ventre." },
-  { n: "Le Chien de chasse", c: "Par derrière", d: 3, s: 4, desc: "En position de levrette, le receveur tend l'une de ses jambes vers l'arrière, entre les jambes du partenaire actif. L'angle devient asymétrique et très stimulant.", v: "Variante : Tendez la jambe vers le plafond plutôt que vers l'arrière." },
-  { n: "Le Sphinx", c: "Par derrière", d: 2, s: 3, desc: "Une levrette où le receveur descend son torse pour s'appuyer sur ses avant-bras, les fesses bien en l'air, réduisant la fatigue des poignets.", v: "Variante : Le receveur peut coller sa poitrine au matelas pour cambrer encore plus le dos." },
-  { n: "La Grenouille", c: "Par derrière", d: 2, s: 4, desc: "Positionnée à plat ventre, la personne réceptrice écarte les genoux au maximum vers l'extérieur (façon grenouille). Le partenaire s'installe au milieu.", v: "Variante : Pressez légèrement l'intérieur cuisses du receveur pour augmenter les sensations." },
-  { n: "Le Toboggan", c: "Par derrière", d: 3, s: 4, desc: "Le receveur est à genoux mais redresse complètement son buste à la verticale, cambrant le bas du dos en arrière vers le partenaire.", v: "Variante : Le partenaire arrière entoure le buste du receveur de ses bras pour caresser son torse." },
-  { n: "La Levrette debout", c: "Par derrière", d: 4, s: 5, desc: "Le partenaire A se tient debout, penché en avant en appui sur un mur ou une table. Le partenaire B se place debout derrière lui.", v: "Variante : Le receveur garde les jambes bien droites pour étirer les ischio-jambiers et resserrer l'entrée." },
-  { n: "La Levrette au bord du lit", c: "Par derrière", d: 2, s: 4, desc: "Le receveur est à quatre pattes sur le matelas, face au mur. Le partenaire se tient debout sur le sol, derrière lui, à hauteur idéale.", v: "Variante : Le partenaire debout maintient les cuisses du receveur pour contrôler l'intensité." },
-  { n: "Le Lazy Dog", c: "Par derrière", d: 1, s: 2, desc: "Une levrette sans effort : le partenaire arrière s'affale littéralement sur le dos du receveur, lui faisant supporter une douce pression de son poids.", v: "Variante : Le partenaire arrière glisse ses hands sous le ventre du receveur pour le soutenir." },
-  { n: "La Levrette croisée", c: "Par derrière", d: 3, s: 4, desc: "À quatre pattes, le receveur croise fortement ses cuisses/chevilles l'une sur l'autre, créant un canal extrêmement étroit et intense pour l'actif.", v: "Variante : Alternez croisement des jambes gauche/droite toutes les minutes." },
-  { n: "La Luge", c: "Par derrière", d: 3, s: 3, desc: "Le receveur est allongé sur le ventre. Le partenaire actif s'assoit à califourchon au-dessus de ses cuisses, entrant par un angle plongeant.", v: "Variante : Le partenaire assis se penche en avant pour masser les épaules du receveur." },
-  { n: "L'Andromaque", c: "Au-dessus", d: 2, s: 3, desc: "Le partenaire A est allongé sur le dos. Le partenaire B s'assoit à califourchon face à lui, genoux posés sur le matelas. B contrôle totalement l'intensité et la profondeur.", v: "Variante : Le partenaire du dessus peut se pencher en avant et s'appuyer sur le torse de l'autre." },
-  { n: "L'Andromaque inversée", c: "Au-dessus", d: 3, s: 4, desc: "Le partenaire du dessus s'assoit à califourchon, mais tourne le dos au partenaire allongé. Le visuel sur le dos et les fesses est très stimulant pour le partenaire allongé.", v: "Variante : Le partenaire allongé caresse le ventre et les cuisses du partenaire qui le chevauche." },
-  { n: "La Cow-girl rodéo", c: "Au-dessus", d: 3, s: 4, desc: "En position d'Andromaque, le partenaire du dessus effectue des mouvements de rotation circulaire du bassin au lieu de simples va-et-vient.", v: "Variante : Alternez entre rotations lentes et mouvements de haut en bas très rapides." },
-  { n: "L'Amazone accroupie", c: "Au-dessus", d: 4, s: 5, desc: "Le partenaire du dessus ne pose pas les genoux, mais s'accroupit en appui sur ses plantes de pieds, bondissant grâce à la force de ses cuisses.", v: "Variante : Le partenaire allongé saisit les hanches de l'Amazone pour l'aider à rebondir." },
-  { n: "La Cavalière de l'espace", c: "Au-dessus", d: 3, s: 3, desc: "En Andromaque, le partenaire du dessus se penche complètement en arrière jusqu'à poser ses mains (ou sa tête) sur les genoux du partenaire allongé.", v: "Variante : Le partenaire allongé soulève son propre bassin pour rencontrer le mouvement descendant." },
-  { n: "Le Bridge", c: "Au-dessus", d: 4, s: 4, desc: "Le partenaire du dessus se positionne en forme de pont (mains et pieds au sol) au-dessus du partenaire allongé, nécessitant une grande force musculaire.", v: "Variante : Rapprochez vos mains de vos pieds pour accentuer la courbure du dos." },
-  { n: "La Chaise à bascule", c: "Au-dessus", d: 2, s: 2, desc: "En position d'Andromaque, les mouvements ne sont pas de haut en bas, mais d'avant en arrière, dans un glissement continu très doux.", v: "Variante : Maintenez les épaules de votre partenaire pour stabiliser le mouvement de balancier." },
-  { n: "Le Rodéo inversé", c: "Au-dessus", d: 4, s: 5, desc: "Andromaque inversée, mais le partenaire du dessus se penche en avant jusqu'à attraper les mollets du partenaire allongé, offrant un angle très plongeant.", v: "Variante : Le partenaire allongé plie légèrement les genoux pour offrir de meilleures prises." },
-  { n: "La Sirène", c: "Au-dessus", d: 2, s: 3, desc: "Le partenaire B chevauche le partenaire A, mais garde ses propres jambes serrées et allongées sur le côté (en amazone). Les frictions sont très localisées.", v: "Variante : Le partenaire A utilise ses cuisses pour frotter l'extérieur des jambes de la sirène." },
-  { n: "La Monteuse", c: "Au-dessus", d: 3, s: 4, desc: "Le partenaire allongé garde les genoux repliés sur son propre torse. L'autre le chevauche, s'asseyant pratiquement en l'air, maintenu par les jambes du receveur.", v: "Variante : Le receveur croise ses chevilles derrière le dos du partenaire supérieur." },
-  { n: "L'Arc de Triomphe", c: "Au-dessus", d: 4, s: 5, desc: "Le partenaire allongé fait un pont complet avec son corps. L'autre le chevauche en équilibre précaire. Une prouesse physique intense.", v: "Variante : Utilisez un gros traversin sous les lombaires pour soutenir le pont sans fatigue." },
-  { n: "La Cuillère", c: "De côté", d: 1, s: 2, desc: "Les deux partenaires sont allongés sur le flanc, emboîtés l'un dans l'autre (en cuillère). Position très reposante, idéale pour de longs câlins sensuels.", v: "Variante : Le partenaire arrière glisse un bras sous la nuque du receveur pour caresser son torse." },
-  { n: "La Cuillère inversée", c: "De côté", d: 1, s: 2, desc: "Les partenaires sont allongés sur le flanc mais se font face. La pénétration demande de décaler légèrement les bassins, parfait pour les baisers langoureux.", v: "Variante : Entremêlez une seule jambe pour stabiliser les bassins." },
-  { n: "Les Ciseaux", c: "De côté", d: 2, s: 3, desc: "Allongés sur le flanc en se faisant face, les partenaires entrelacent leurs jambes en forme de X. Les frottements sont très intenses sur les zones érogènes externes.", v: "Variante : Gardez les torses éloignés et ne connectez que vos bassins." },
-  { n: "Le 69 latéral", c: "De côté", d: 2, s: 4, desc: "Position tête-bêche pour le sexe oral, mais allongés sur le côté (en cuillère inversée). Moins fatigant que le 69 classique.", v: "Variante : Pliez les genoux pour vous rapprocher au maximum de votre partenaire." },
-  { n: "Le Tire-bouchon", c: "De côté", d: 3, s: 4, desc: "Le partenaire A est allongé sur le dos, tandis que le partenaire B s'allonge perpendiculairement sur le côté, une jambe par-dessus le torse de A.", v: "Variante : Le partenaire A utilise ses mains pour tirer les hanches de B vers lui à chaque mouvement." },
-  { n: "L'Étau", c: "De côté", d: 2, s: 3, desc: "En cuillère, le partenaire arrière verrouille fermement ses deux jambes autour de la jambe inférieure du partenaire avant.", v: "Variante : Le receveur pousse vers l'arrière à chaque mouvement pour contrer la poussée." },
-  { n: "La Cuillère surélevée", c: "De côté", d: 2, s: 3, desc: "En cuillère classique, le partenaire receveur lève sa jambe supérieure (celle du dessus) vers le plafond pour ouvrir largement l'accès.", v: "Variante : Le partenaire arrière attrape cette jambe levée pour stabiliser la position." },
-  { n: "Le V incliné", c: "De côté", d: 3, s: 3, desc: "Les deux partenaires sont sur le flanc, mais leurs bustes s'éloignent pour form un V, seuls leurs bassins restent connectés au centre.", v: "Variante : Le partenaire avant regarde par-dessus son épaule pour maintenir le contact visuel." },
-  { n: "Le Croissant de lune", c: "De côté", d: 2, s: 2, desc: "Une cuillère où les deux partenaires courbent fortement leur dos et rentrent la tête pour former un cocon en arc de cercle.", v: "Variante : Le partenaire arrière masse la nuque du partenaire avant avec des mouvements lents." },
-  { n: "Le Noeud amoureux", c: "De côté", d: 3, s: 3, desc: "Face à face sur le côté, chaque partenaire enlace ses jambes autour des cuisses de l'autre. Une véritable fusion des corps difficile à dénouer.", v: "Variante : Balancez doucement vos corps d'avant en arrière de façon synchronisée." },
-  { n: "L'Étoile Filante", c: "De côté", d: 2, s: 3, desc: "Le partenaire A est sur le dos. Le partenaire B est allongé sur le côté, formant un T parfait avec le corps de A.", v: "Variante : B glisse une main sous le creux des reins de A pour créer une légère cambrure." },
-  { n: "Le Poteau", c: "Debout & Acrobatique", d: 4, s: 4, desc: "Le receveur se tient debout, le dos fermement plaqué contre un mur. Le partenaire actif se tient debout face à lui pour la pénétration.", v: "Variante : Le receveur lève une jambe et l'enroule autour de la hanche du partenaire." },
-  { n: "L'Ascenseur", c: "Debout & Acrobatique", d: 5, s: 5, desc: "Le partenaire debout porte entièrement l'autre partenaire. Le porté enroule ses jambes autour de la taille du porteur et s'agrippe à son cou.", v: "Variante : Le porteur peut s'adosser à un mur pour soulager le poids sur son dos." },
-  { n: "Le Rocking-chair", c: "Debout & Acrobatique", d: 3, s: 3, desc: "Le partenaire actif est assis sur une chaise solide. Le receveur s'assoit à califourchon face à lui. Mouvements de va-et-vient horizontaux.", v: "Variante : Le receveur pose ses pieds à plat sur l'assise pour rebondir." },
-  { n: "La Balançoire", c: "Debout & Acrobatique", d: 4, s: 4, desc: "Le receveur s'assoit sur un meuble haut (machine à laver, commode). Le partenaire se tient debout entre ses jambes écartées.", v: "Variante : Le receveur s'allonge en arrière sur le meuble, la tête dans le vide." },
-  { n: "Le Stand and Deliver", c: "Debout & Acrobatique", d: 3, s: 4, desc: "Le receveur s'allonge sur une table solide, les fesses au ras du bord. Le partenaire actif est debout sur le sol.", v: "Variante : Le partenaire debout soulève les jambes du receveur et les pose sur ses épaules." },
-  { n: "La Danse du ventre", c: "Debout & Acrobatique", d: 4, s: 3, desc: "Les deux partenaires sont debout face à face au milieu de la pièce, genoux légèrement fléchis pour s'aligner, et ondulent leur bassin.", v: "Variante : Agrippez-vous par les épaules et tournez lentement sur vous-mêmes." },
-  { n: "Le T de la victoire", c: "Debout & Acrobatique", d: 5, s: 5, desc: "Le porteur tient le receveur par les hanches. Le receveur est à l'horizontale, formant un T avec le corps du porteur.", v: "Variante : Le receveur s'aide en prenant appui sur le mur avec ses bras." },
-  { n: "Le X debout", c: "Debout & Acrobatique", d: 4, s: 4, desc: "Le receveur est de dos contre le mur, bras et jambes grands écartés (en X). L'actif vient s'emboîter au centre de l'étoile.", v: "Variante : L'actif maintient les poignets du receveur plaqués contre le mur." },
-  { n: "Le Saut de l'ange", c: "Debout & Acrobatique", d: 5, s: 5, desc: "Une fois porté (comme dans l'Ascenseur), le receveur cambre violemment le dos en arrière, la tête vers le sol, s'abandonnant totally.", v: "Variante : Le porteur soutient fermement le bas du dos du receveur d'une main." },
-  { n: "Le Porté en berceau", c: "Debout & Acrobatique", d: 5, s: 4, desc: "Le porteur soulève son partenaire en le portant dans ses bras (une main dans le dos, l'autre sous les genoux), à l'horizontale.", v: "Variante : Marchez très lentement dans la pièce pendant l'acte." },
-  { n: "La Brouette", c: "Debout & Acrobatique", d: 5, s: 5, desc: "Le receveur est en appui sur ses mains au sol. Le partenaire debout derrière lui attrape ses chevilles et les soulève au niveau de ses hanches.", v: "Variante : Placez des coussins sous les poignets du receveur pour plus de confort." },
-  { n: "Le Fauteuil de bureau", c: "Sur Mobilier", d: 2, s: 3, desc: "L'actif s'assoit sur un fauteuil à roulettes. Le receveur le chevauche. Profitez du rebond et de la rotation du siège.", v: "Variante : Le receveur pousse avec ses pieds sur le sol pour faire tourner le fauteuil." },
-  { n: "L'Accoudoir", c: "Sur Mobilier", d: 3, s: 4, desc: "Le receveur s'allonge sur le dos en plaçant son bassin pile sur l'accoudoir du canapé pour être surélevé. L'actif est à genoux par terre.", v: "Variante : Le receveur laisse tomber sa tête en arrière vers les coussins de l'assise." },
-  { n: "La Table de cuisine", c: "Sur Mobilier", d: 2, s: 4, desc: "Le grand classique cinématographique : l'un est assis au bord d'une table solide, l'autre debout face à lui pour un accès direct.", v: "Variante : Dégagez tout ce qu'il y a sur la table d'un grand revers de bras (pour le style)." },
-  { n: "Le Tabouret de bar", c: "Sur Mobilier", d: 3, s: 3, desc: "L'un est perché sur un tabouret haut, l'autre se place debout face à lui. Le dénivelé naturel facilite l'alignement des bassins.", v: "Variante : Le partenaire debout se glisse entre les jambes écartées de la personne assise." },
-  { n: "Le Bureau", c: "Sur Mobilier", d: 3, s: 4, desc: "Le receveur se penche en avant, le ventre et la poitrine reposant sur un bureau dégagé. Le partenaire entre par derrière en restant debout.", v: "Variante : Le receveur s'agrippe fermement aux rebords du bureau pour encaisser la poussée." },
-  { n: "Le Canapé profond", c: "Sur Mobilier", d: 2, s: 2, desc: "Les partenaires s'allongent en angle droit, suivant la forme en L d'un canapé d'angle. L'un est sur le dossier, l'autre sur la méridienne.", v: "Variante : Utilisez les accoudoirs comme repose-pieds pour surélever les jambes." },
-  { n: "Le Repose-pieds", c: "Sur Mobilier", d: 3, s: 3, desc: "Placez un pouf ou un repose-pieds sous le bassin du receveur allongé au sol. L'actif se place à genoux devant lui.", v: "Variante : Le receveur laisse ses épaules toucher le sol pour une cambrure inversée intense." },
-  { n: "L'Escalier", c: "Sur Mobilier", d: 4, s: 5, desc: "Exploitez les marches ! Le receveur est à quatre pattes sur une marche supérieure, l'actif debout ou à genoux deux marches plus bas.", v: "Variante : Le receveur s'allonge sur le dos, la tête vers le bas de l'escalier." },
-  { n: "La Chaise longue", c: "Sur Mobilier", d: 2, s: 3, desc: "Idéal en été, l'inclinaison de la chaise longue offre un angle parfait pour un missionnaire reposant où l'actif reste à genoux au sol.", v: "Variante : L'actif passe ses bras sous le transat pour étreindre fermement le receveur." },
-  { n: "Le Lit à baldaquin", c: "Sur Mobilier", d: 3, s: 4, desc: "Le receveur s'agrippe aux montants verticaux du lit pour ouvrir son corps ou gagner en puissance de contre-poussée.", v: "Variante : Utilisez des attaches en soie sur les montants pour lier doucement les poignets." },
-  { n: "La balade en forêt", c: "Sur Mobilier", d: 3, s: 4, desc: "Le receveur est perché sur un rebord de fenêtre large ou un long comptoir de cuisine, l'actif debout devant lui.", v: "Variante : Le receveur s'appuie contre la vitre froide pour un frisson supplémentaire." },
-  { n: "Le Plongeoir", c: "Sur Mobilier", d: 4, s: 4, desc: "L'actif se tient debout au sol, au ras du lit. Le receveur est allongé à plat ventre sur le lit, les hanches juste au bord du matelas.", v: "Variante : L'actif soulève les jambes du receveur pour les coincer sous ses propres bras." },
-  { n: "Le 69 Classique", c: "Oral & Préliminaires", d: 2, s: 5, desc: "Les partenaires sont allongés tête-bêche (la tête de l'un au niveau du bassin de l'autre), l'un sur le dos, l'autre par-dessus.", v: "Variante : Synchronisez vos mouvements de langue pour atteindre le sommet en même temps." },
-  { n: "Le 69 Inversé", c: "Oral & Préliminaires", d: 3, s: 5, desc: "Tête-bêche, mais le partenaire du dessus tourne le dos à celui du dessous (regardant ses pieds). Moins d'intimité visuelle, plus de concentration sur la sensation.", v: "Variante : Le partenaire du dessus caresse ses propres cuisses pour stimuler visuellement l'autre." },
-  { n: "Le 69 Debout", c: "Oral & Préliminaires", d: 5, s: 5, desc: "Le porteur est debout et maintient le receveur la tête en bas, le long de corps. Très physique et vertigineux.", v: "Variante : Faites-le contre un mur pour aider le porteur à stabiliser le poids." },
-  { n: "Le Lotus Oral", c: "Oral & Préliminaires", d: 3, s: 4, desc: "Le partenaire A est assis en tailleur. Le partenaire B s'agenouille devant lui et se penche en avant pour prodiguer le soin.", v: "Variante : Le partenaire A caresse délicatement les cheveux et la nuque de B." },
-  { n: "Le 69 sur le côté", c: "Oral & Préliminaires", d: 2, s: 4, desc: "Position tête-bêche mais allongés sur le côté. Une version très reposante du 69 classique qui permet de faire durer le plaisir sans fatigue musculaire.", v: "Variante : Pliez la jambe du dessus pour faciliter l'accès à votre partenaire." },
-  { n: "La Cascade Orale", c: "Oral & Préliminaires", d: 3, s: 5, desc: "Le receveur est allongé sur le lit, la tête pendante dans le vide au bord du matelas. L'actif se tient debout et se penche sur lui.", v: "Variante : L'afflux sanguin vers la tête augmente la sensibilité du receveur, allez-y doucement." },
-  { n: "Le Trône (sur chaise)", c: "Oral & Préliminaires", d: 1, s: 4, desc: "Le receveur s'installe comme un roi/une reine sur un fauteuil. L'actif se met à genoux sur le sol devant lui, dans une position de dévotion.", v: "Variante : Le receveur guide la tête de l'actif avec ses mains posées sur ses oreilles." },
-  { n: "Le Baiser Polaire", c: "Oral & Préliminaires", d: 1, s: 5, desc: "Le partenaire actif prend un glaçon dans sa bouche juste avant de commencer la stimulation orale. Contraste thermique explosif.", v: "Variante : Alternez entre le glaçon et des gorgées d'eau très chaude (thé) pour surprendre." },
-  { n: "La Tête Bêche Assise", c: "Oral & Préliminaires", d: 3, s: 4, desc: "Les partenaires forment un 69 tout en étant assis en équilibre sur leurs fesses, les torses inclinés vers l'avant.", v: "Variante : Utilisez vos bras libres pour soutenir le dos de l'autre et garder l'équilibre." },
-  { n: "Le Plongeon", c: "Oral & Préliminaires", d: 2, s: 4, desc: "Le receveur est allongé à plat ventre sur le lit. L'actif se place entre ses jambes par l'arrière pour une stimulation orale audacieuse.", v: "Variante : Le receveur peut écarter une jambe vers l'extérieur pour dégager davantage l'accès." },
-  { n: "L'Oral en V", c: "Oral & Préliminaires", d: 2, s: 3, desc: "Le receveur est sur le dos, épaules au sol, bassin en l'air avec les chevilles posées sur les épaules de l'actif agenouillé.", v: "Variante : L'actif peut masser l'intérieur des cuisses du receveur en même temps." },
-  { n: "La Soumission Douce", c: "Oral & Préliminaires", d: 2, s: 4, desc: "Le receveur est allongé sur le dos, les poignets attachés au-dessus de sa tête avec une écharpe douce. Il laisse le partenaire actif prendre le contrôle total.", v: "Variante : Bandez également les yeux du receveur pour décupler son sens du toucher." },
-  { n: "Le Face à Face Oral", c: "Oral & Préliminaires", d: 4, s: 5, desc: "L'un est assis sur un meuble à hauteur de poitrine, l'autre se tient debout devant. Leurs visages sont presque à la même hauteur que le bassin.", v: "Variante : Maintenez un contact visuel brûlant sans cligner des yeux." },
-  { n: "La Lèche-Vitrine", c: "Oral & Préliminaires", d: 2, s: 4, desc: "Pratiquez le sexe oral en positionnant le receveur debout ou assis directement face à un grand miroir, pour qu'il puisse regarder la scène.", v: "Variante : L'actif jette des regards vers le miroir pour observer les réactions de son partenaire." },
-  { n: "L'Oral Croisé", c: "Oral & Préliminaires", d: 2, s: 3, desc: "Le receveur est allongé sur le lit. L'actif s'allonge perpendiculairement à lui, le torse au niveau de son bassin.", v: "Variante : Le receveur utilise ses mains pour masser les épaules ou le dos de l'actif." },
-  { n: "Le Souffle Chaud", c: "Oral & Préliminaires", d: 1, s: 3, desc: "Plutôt que d'utiliser la langue immédiatement, l'actif s'approche tout près et souffle de l'air chaud sur la zone érogène pour créer l'anticipation.", v: "Variante : Alternez de très légers effleurements des lèvres avec des souffles profonds." },
-  { n: "Le 69 Cambré", c: "Oral & Préliminaires", d: 4, s: 5, desc: "Dans un 69, le partenaire du dessous prend appui sur sa nuque et ses talons pour lever très haut son bassin vers la bouche de l'autre.", v: "Variante : Le partenaire du dessus soutient le bassin soulevé pour éviter la fatigue lombaire." },
-  { n: "Le Dégustateur", c: "Oral & Préliminaires", d: 1, s: 4, desc: "Le partenaire actif explore avec une lenteur extrême, refusant d'accélérer malgré les demandes, comme on déguste un grand cru.", v: "Variante : Utilisez uniquement le bout de la langue pendant les 5 premières minutes." },
-  { n: "Le Coussin d'Amour", c: "Oral & Préliminaires", d: 1, s: 3, desc: "Le receveur est sur le dos, avec 2 ou 3 gros oreillers glissés sous son bassin. L'élévation offre un accès direct et confortable pour l'actif à genoux.", v: "Variante : Le receveur laisse ses jambes retomber lourdement sur les épaules de l'actif." },
-  { n: "La Vue Plongeante", c: "Oral & Préliminaires", d: 2, s: 4, desc: "Le receveur se tient debout. L'actif est à genoux sur le sol, regardant de bas en haut vers son partenaire.", v: "Variante : Le receveur caresse les cheveux de l'actif et dicte doucement le rythme." },
-  { n: "L'Oral Suspendu", c: "Oral & Préliminaires", d: 3, s: 5, desc: "Le receveur s'allonge au bord du lit, la tête et les épaules dans le vide vers le sol. L'actif se place au-dessus pour un oral inversé vertigineux.", v: "Variante : L'actif peut masser doucement la gorge exposée du receveur." },
-  { n: "Le 69 Diagonale", c: "Oral & Préliminaires", d: 2, s: 4, desc: "Plutôt que d'être parfaitement alignés, les partenaires forment un X (tête-bêche en diagonale) sur un grand lit pour éviter de s'écraser.", v: "Variante : Calez vos têtes sur des traversins pour éviter les torsions du cou." },
-  { n: "Le Papillon Oral", c: "Oral & Préliminaires", d: 2, s: 4, desc: "Le receveur est sur le dos, plie les genoux et laisse tomber ses cuisses de chaque côté (en losange). Grande ouverture et vulnérabilité.", v: "Variante : L'actif glisse ses mains sous les cuisses du receveur pour accentuer l'étirement." },
-  { n: "La Dégustation aveugle", c: "Oral & Préliminaires", d: 1, s: 5, desc: "Le partenaire actif a les yeux bandés. Il doit se repérer uniquement au toucher et à l'odorat pour trouver sa cible.", v: "Variante : C'est le receveur qui guide doucement la tête de l'actif vers les bonnes zones." },
-  { n: "Le Massage Préliminaire", c: "Oral & Préliminaires", d: 1, s: 3, desc: "Commencez par un massage complet du corps (dos, cuisses) avec de l'huile chauffante, en dérivant de plus en plus près de l'intimité sans y toucher, jusqu'à rendre l'autre fou.", v: "Variante : Utilisez la pulpe des doigts pour un toucher très léger, presque chatouilleux." },
-  { n: "Le 69 Incliné", c: "Oral & Préliminaires", d: 3, s: 4, desc: "Réalisé sur une chaise longue ou un fauteuil incliné. Le partenaire du dessous est adossé, l'autre par-dessus lui.", v: "Variante : Le partenaire du dessus peut se stabiliser en agrippant le dossier du fauteuil." },
-  { n: "La Montée en Puissance", c: "Oral & Préliminaires", d: 1, s: 4, desc: "Un oral basé sur le rythme : l'actif commence par des caresses imperceptibles pendant plusieurs minutes, avant d'augmenter brusquement la pression et la vitesse.", v: "Variante : Redescendez en intensité juste avant l'orgasme pour faire du 'edging'." },
-  { n: "L'Étoile Orale", c: "Oral & Préliminaires", d: 2, s: 3, desc: "Le receveur s'étale de tout son long sur le lit, bras et jambes ouverts en étoile de mer, s'abandonnant totalement aux soins de son partenaire.", v: "Variante : L'actif parcourt chaque branche de l'étoile avec des baisers avant d'atteindre le centre." },
-  { n: "Le Pont Oral", c: "Oral & Préliminaires", d: 4, s: 5, desc: "Le receveur se met en position de pont de gymnastique. L'actif se glisse sous lui pour une exploration par en dessous. Très physique.", v: "Variante : Le receveur peut prendre appui sur ses avant-bras plutôt que sur ses poignets." },
-  { n: "L'Éveil des Sens", c: "Oral & Préliminaires", d: 1, s: 4, desc: "Avant tout contact buccal, l'actif utilise des objets (plume, foulard en soie, glaçon) pour effleurer les zones intimes.", v: "Variante : Demandez au receveur de deviner quel objet est en train d'être utilisé." },
-  { n: "Le Missionnaire Jambes fermées", c: "Angles & Tweaks", d: 1, s: 3, desc: "Au lieu d'écarter les jambes, le receveur les serre fermement l'une contre l'autre. Le partenaire actif les enjambe. Crée une sensation de friction intense.", v: "Variante : Le receveur peut enrouler une cheville autour de l'autre pour verrouiller ses jambes." },
-  { n: "Le Missionnaire Jambes au ciel", c: "Angles & Tweaks", d: 2, s: 4, desc: "Le receveur garde les jambes parfaitement droites et tendues vers le plafond, posées contre le torse de l'actif. Réduit la longueur du canal vaginal/anal.", v: "Variante : L'actif pousse doucement les chevilles du receveur vers sa tête pour cambrer le bas du dos." },
-  { n: "La Levrette Genoux surélevés", c: "Angles & Tweaks", d: 3, s: 4, desc: "Le receveur est à quatre pattes mais place ses genoux sur une pile de coussins épais. Le dénivelé modifie radicalement l'angle d'impact.", v: "Variante : Écartez davantage les genoux sur les coussins pour laisser l'actif s'enfoncer plus loin." },
-  { n: "L'Andromaque Mains liées", c: "Angles & Tweaks", d: 2, s: 5, desc: "Le partenaire du dessus place volontairement ses mains derrière son dos (ou au-dessus de sa tête) et laisse le partenaire allongé guider ses hanches.", v: "Variante : Le partenaire allongé utilise une écharpe pour maintenir doucement les poignets de l'Andromaque." },
-  { n: "Le G-Whiz", c: "Angles & Tweaks", d: 3, s: 5, desc: "Un missionnaire très replié où le receveur ramène ses genoux presque contre ses épaules, bassin très incliné. Réputé pour cibler précisément la zone antérieure (Point G).", v: "Variante : L'actif place ses bras sous les genoux du receveur pour maintenir fermement la position." },
-  { n: "La Catherine", c: "Angles & Tweaks", d: 2, s: 4, desc: "Le receveur est sur le dos. Une de ses jambes est allongée à plat, l'autre est levée et repose sur l'épaule de l'actif. Une asymétrie très agréable.", v: "Variante : Alternez la jambe levée toutes les quelques minutes pour varier les sensations." },
-  { n: "Le Triangle", c: "Angles & Tweaks", d: 3, s: 3, desc: "Le receveur est sur le dos, le bassin surélevé par un coussin rigide, formant un triangle avec le lit. L'actif se place à genoux pour un angle d'entrée très droit.", v: "Variante : L'actif peut se redresser complètement sur ses genoux pour un effet 'piston'." },
-  { n: "L'Angle droit", c: "Angles & Tweaks", d: 2, s: 3, desc: "Le receveur sur le dos replie ses genoux à 90 degrés et pose ses mollets sur les épaules de l'actif, formant un angle droit parfait.", v: "Variante : L'actif masse les mollets de son partenaire pendant l'action." },
-  { n: "La Compression", c: "Angles & Tweaks", d: 3, s: 4, desc: "Quelle que soit la position, le receveur contracte fortement ses muscles pelviens et serre ses cuisses pour créer une sensation d'étreinte maximale.", v: "Variante : Rythmez les contractions pelviennes (Kegel) sur les mouvements de va-et-vient." },
-  { n: "L'Expansion", c: "Angles & Tweaks", d: 2, s: 2, desc: "L'actif recule presque jusqu'à sortir complètement à chaque mouvement, avant de revenir profondément. Joue sur la frustration et l'anticipation.", v: "Variante : Marquez une pause d'une seconde lorsque vous êtes presque sorti, avant la pénétration." },
-  { n: "La Méditation sexuelle", c: "Sensorielles", d: 1, s: 3, desc: "Une fois emboîtés, les deux partenaires cessent tout mouvement pendant plusieurs minutes. Fermez les yeux et concentrez-vous uniquement sur les micro-pulsations de vos corps.", v: "Variante : Synchronisez votre respiration : l'un inspire quand l'autre expire." },
-  { n: "Le Slow-motion", c: "Sensorielles", d: 2, s: 4, desc: "Effectuez l'acte avec une lenteur exagérée, comme au ralenti. Chaque va-et-vient doit prendre plusieurs secondes. Idéal pour faire monter la tension.", v: "Variante : Combinez le ralenti avec un bandeau sur les yeux du receveur." },
-  { n: "La Respiration synchronisée", c: "Sensorielles", d: 1, s: 2, desc: "Inspirez et expirez exactement en même temps, ventre contre ventre. Cela crée une puissante résonance énergétique et émotionnelle.", v: "Variante : Accélérez progressivement le rythme de la respiration pour faire monter l'excitation." },
-  { n: "Le Contact visuel total", c: "Sensorielles", d: 1, s: 4, desc: "Interdiction formelle de fermer les yeux ou de détourner le regard, de la première caresse jusqu'à l'orgasme. Très intense et vulnérable.", v: "Variante : Ne clignez des yeux que lorsque votre partenaire le fait." },
-  { n: "Le Miroir", c: "Sensorielles", d: 2, s: 5, desc: "Pratiquez l'amour face à une grande glace lumineuse (ou un miroir au plafond) pour vous observer faire. Le voyeurisme de soi-même est un puissant aphrodisiaque.", v: "Variante : Regardez votre partenaire dans les yeux via le reflet du miroir." },
-  { n: "La Douche", c: "Sensorielles", d: 3, s: 4, desc: "Faites l'amour debout sous l'eau chaude. L'eau coulant sur les corps modifie les sensations tactiles. Attention : l'eau n'est pas un lubrifiant !", v: "Variante : Alternez brutalement vers l'eau froide pendant quelques secondes pour un choc thermique." },
-  { n: "Le Bain", c: "Sensorielles", d: 2, s: 3, desc: "L'un s'assoit au fond de la baignoire remplie, l'autre vient s'asseoir sur lui. L'apesanteur de l'eau facilite grandement les mouvements.", v: "Variante : Ajoutez des huiles essentielles ou des bulles pour masquer vos mouvements." },
-  { n: "Le Tapis", c: "Sensorielles", d: 1, s: 3, desc: "Quittez le lit confortable pour la rudesse d'un tapis épais devant le salon, ou la chaleur de la moquette. Le changement de texture ravive les sens.", v: "Variante : Allumez un feu de cheminée (ou une vidéo de feu sur la TV) pour la lumière tamisée." },
-  { n: "La Forêt", c: "Sensorielles", d: 4, s: 5, desc: "L'adrénaline du plein air (dans un lieu isolé et sûr). La brise sur la peau nue et la peur d'être surpris décuplent l'excitation sexuelle.", v: "Variante : Adossez-vous à un arbre large pour un missionnaire debout (le Poteau)." },
-  { n: "L'Improvisation totale", c: "Sensorielles", d: 2, s: 5, desc: "Désactivez votre cerveau rationnel. Interdiction de planifier la prochaine position : laissez vos corps s'emmêler, rouler et décider eux-mêmes de la suite.", v: "Variante : Laissez la musique dicter le rythme et les changements de position." },
-  { n: "Le Double Contact", c: "Sensorielles", d: 2, s: 4, desc: "Pendant le rapport (ex: en missionnaire ou en levrette), un petit vibromasseur est inséré entre les deux corps pour stimuler le clitoris en continu.", v: "Variante : Confiez la télécommande du jouet à votre partenaire pour qu'il gère les vibrations." },
-  { n: "Le Papillon de Nuit", c: "Sensorielles", d: 1, s: 5, desc: "Plongez la chambre dans le noir le plus total. Bandez les yeux de l'un des partenaires (ou des deux). La suppression de la vue rendra l'ouïe et le toucher explosifs.", v: "Variante : Murmurez des instructions de plus en plus érotiques à l'oreille de votre partenaire." }
+// --- DONNÉES : GLOSSAIRE ---
+const GLOSSAIRE = [
+  { term: 'Arase', def: 'Couche de mortier parfaitement de niveau sur laquelle on monte le premier rang.' },
+  { term: 'Barbotine', def: 'Mélange liquide de ciment et d\'eau servant de liaison.' },
+  { term: 'Chaînage', def: 'Armature en acier noyée dans le béton pour consolider les murs.' },
+  { term: 'Ferraillage', def: 'Ensemble des armatures en fer ou en acier destinées à renforcer le béton.' },
+  { term: 'Parpaing', def: 'Bloc de béton manufacturé, creux ou plein. Aussi appelé "Agglo".' }
 ];
 
-const FULL_CATALOG = POSITIONS_DATA.map((p, i) => ({
-  id: `p${i}`, name: p.n, cat: p.c, diff: p.d, spice: p.s, desc: p.desc, v: p.v
-}));
+// --- COMPOSANT : ECRAN DE CHARGEMENT ANIMÉ ---
+const LoadingScreen = () => (
+  <div className="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center z-[999] overflow-hidden">
+    <style>{`
+      @keyframes dropHeavy {
+        0% { transform: translateY(-300px); opacity: 0; }
+        60% { transform: translateY(10px); opacity: 1; }
+        80% { transform: translateY(-5px); opacity: 1; }
+        100% { transform: translateY(0); opacity: 1; }
+      }
+      .block-1 { animation: dropHeavy 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards; opacity: 0; animation-delay: 0.2s; }
+      .block-2 { animation: dropHeavy 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards; opacity: 0; animation-delay: 0.6s; }
+      .block-3 { animation: dropHeavy 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards; opacity: 0; animation-delay: 1.1s; }
+      .block-4 { animation: dropHeavy 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards; opacity: 0; animation-delay: 1.5s; }
+      .block-5 { animation: dropHeavy 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards; opacity: 0; animation-delay: 1.9s; }
+    `}</style>
+
+    <div className="relative w-48 h-40 mb-8">
+      {/* Rangée 1 (Bas) */}
+      <div className="block-1 absolute bottom-0 left-0 w-14 h-8 bg-stone-400 border-[3px] border-stone-600 rounded-sm shadow-lg flex items-center justify-center">
+        <div className="w-8 h-3 border-2 border-stone-500 rounded-sm"></div>
+      </div>
+      <div className="block-2 absolute bottom-0 left-[60px] w-14 h-8 bg-stone-400 border-[3px] border-stone-600 rounded-sm shadow-lg flex items-center justify-center">
+        <div className="w-8 h-3 border-2 border-stone-500 rounded-sm"></div>
+      </div>
+      <div className="block-3 absolute bottom-0 left-[120px] w-14 h-8 bg-stone-400 border-[3px] border-stone-600 rounded-sm shadow-lg flex items-center justify-center">
+        <div className="w-8 h-3 border-2 border-stone-500 rounded-sm"></div>
+      </div>
+      
+      {/* Rangée 2 (Haut - Croisée) */}
+      <div className="block-4 absolute bottom-[32px] left-[30px] w-14 h-8 bg-stone-400 border-[3px] border-stone-600 rounded-sm shadow-lg flex items-center justify-center">
+        <div className="w-8 h-3 border-2 border-stone-500 rounded-sm"></div>
+      </div>
+      <div className="block-5 absolute bottom-[32px] left-[90px] w-14 h-8 bg-stone-400 border-[3px] border-stone-600 rounded-sm shadow-lg flex items-center justify-center">
+        <div className="w-8 h-3 border-2 border-stone-500 rounded-sm"></div>
+      </div>
+    </div>
+
+    <h2 className="text-amber-500 font-black text-xl tracking-widest uppercase animate-pulse">Gâchage du mortier...</h2>
+    <p className="text-slate-500 text-xs mt-2 font-bold">Préparation du chantier</p>
+  </div>
+);
 
 export default function App() {
-  const [user, setUser] = useState(null);
-  const [requireLogin, setRequireLogin] = useState(false); 
-  const [userData, setUserData] = useState(null);
-  const [partnerData, setPartnerData] = useState(null);
-  
-  const [myCustomPositions, setMyCustomPositions] = useState([]);
-  const [partnerCustomPositions, setPartnerCustomPositions] = useState([]);
-  
-  const [activeTab, setActiveTab] = useState('explorer'); 
-  const [loading, setLoading] = useState(true);
-  
-  const [selectedPosition, setSelectedPosition] = useState(null);
-  const [selectedTip, setSelectedTip] = useState(null);
-  const [isCreating, setIsCreating] = useState(false);
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showInstallTutorial, setShowInstallTutorial] = useState(false);
-  const [showIdeaModal, setShowIdeaModal] = useState(false); 
-  const [ideaText, setIdeaText] = useState(''); 
-
-  const [partnerNote, setPartnerNote] = useState(''); 
-  
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('home');
+  const [selectedModule, setSelectedModule] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterSpice, setFilterSpice] = useState(0); 
-  const [filterPhysique, setFilterPhysique] = useState(0); 
-  const [filterCat, setFilterCat] = useState('Toutes');
-  const [sortBy, setSortBy] = useState('az'); 
   
-  const [notifications, setNotifications] = useState([]);
-  const [partnerCodeInput, setPartnerCodeInput] = useState('');
-  
-  const [editPosId, setEditPosId] = useState(null);
-  const [newPos, setNewPos] = useState({ name: '', cat: 'Face à face', newCat: '', desc: '', v: '', diff: 3, spice: 3, shared: true });
-  
-  const [profileForm, setProfileForm] = useState({ pseudo: '', bio: '', avatarUrl: '' });
-  const [discreetMode, setDiscreetMode] = useState(false);
+  const [calcLength, setCalcLength] = useState('');
+  const [calcWidth, setCalcWidth] = useState('');
+  const [calcDepth, setCalcDepth] = useState('');
 
-  const [activeGame, setActiveGame] = useState(null);
-  const [gameResult, setGameResult] = useState(null);
-  
-  // --- ÉTATS CHAT ---
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [showPartnerProfile, setShowPartnerProfile] = useState(false);
-  const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [editingMsgId, setEditingMsgId] = useState(null);
-  const [editMsgText, setEditMsgText] = useState('');
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const chatEndRef = useRef(null);
-  
-  // --- ÉTATS JEUX ---
-  const [blurGameData, setBlurGameData] = useState(null);
-  const [blurFile, setBlurFile] = useState(null);
-  const [blurPreview, setBlurPreview] = useState(null);
-  const [blurDuration, setBlurDuration] = useState(60); 
-  const [uploadingBlur, setUploadingBlur] = useState(false);
-  const [currentBlur, setCurrentBlur] = useState(20); 
-  const [timeLeft, setTimeLeft] = useState("");
-
-  const [vaultData, setVaultData] = useState(null);
-  const [vaultType, setVaultType] = useState('text'); // 'text' ou 'photo'
-  const [vaultCondition, setVaultCondition] = useState('');
-  const [vaultSecret, setVaultSecret] = useState('');
-  const [vaultRewardPhoto, setVaultRewardPhoto] = useState(null);
-  const [vaultRewardPreview, setVaultRewardPreview] = useState(null);
-  const [vaultKeysReq, setVaultKeysReq] = useState(3);
-  
-  const [dailyQData, setDailyQData] = useState(null);
-  const [myDailyAnswer, setMyDailyAnswer] = useState('');
-
-  const lastSeenPingRef = useRef(Date.now());
-  const prevPartnerLikesRef = useRef([]);
-  const myLikesRef = useRef([]);
-  const [adminPopupMessage, setAdminPopupMessage] = useState(null);
-
-  const lastAdminCommandRef = useRef(
-    typeof window !== 'undefined' ? parseInt(localStorage.getItem('kama_last_cmd') || '0', 10) : 0
-  );
-
-  const fireSystemNotification = (title, body) => {
-    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-      try {
-        new Notification(title, { body });
-        if (navigator.serviceWorker && navigator.serviceWorker.ready) {
-          navigator.serviceWorker.ready.then(reg => {
-             reg.showNotification(title, { body }).catch(e=>e);
-          }).catch(e=>e);
-        }
-      } catch (e) {
-        console.log("Erreur notification système:", e);
-      }
-    }
-  };
-
+  // Simuler le temps de chargement pour voir l'animation
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      setNotificationsEnabled(Notification.permission === 'granted');
-    }
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 3000); // 3 secondes de chargement
+    return () => clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        setRequireLogin(false);
-      } else {
-        setUser(null);
-        setRequireLogin(true); 
-        setLoading(false);
-      }
-    });
-    return () => unsub();
-  }, []);
+  const calculateConcrete = useMemo(() => {
+    const l = parseFloat(calcLength);
+    const w = parseFloat(calcWidth);
+    const d = parseFloat(calcDepth) / 100;
+    if (!l || !w || !d || l <= 0 || w <= 0 || d <= 0) return null;
+    const volume = l * w * d;
+    return {
+      volume: volume.toFixed(2),
+      cimentSacs: Math.ceil(volume * 10),
+      sable: Math.round(volume * 800),
+      gravier: Math.round(volume * 1000),
+      eau: Math.round(volume * 175)
+    };
+  }, [calcLength, calcWidth, calcDepth]);
 
-  useEffect(() => {
-    if (user) {
-      updateDoc(doc(db, 'artifacts', appId, 'users', user.uid), { 
-        lastActive: Date.now() 
-      }).catch(err => console.error("Erreur lastActive:", err));
-    }
-  }, [user, activeTab, activeGame, isChatOpen]);
-
-  useEffect(() => {
-    if (!user) return;
-    const commandRef = doc(db, 'artifacts', appId, 'admin', 'commands');
-    const unsubAdmin = onSnapshot(commandRef, (snap) => {
-      if (snap.exists()) {
-        const cmd = snap.data();
-        if (cmd.timestamp <= lastAdminCommandRef.current) return;
-        lastAdminCommandRef.current = cmd.timestamp;
-        if (typeof window !== 'undefined') localStorage.setItem('kama_last_cmd', cmd.timestamp.toString());
-
-        if (cmd.type === 'POPUP_MESSAGE') {
-          setAdminPopupMessage(cmd.text);
-        } else if (cmd.type === 'FORCE_NAV') {
-          setActiveTab(cmd.tab);
-          setActiveGame(null); 
-          notify("Le Maître du Jeu a changé votre page !", "⚡");
-        } else if (cmd.type === 'SYSTEM_NOTIF') {
-          fireSystemNotification(cmd.title, cmd.body);
-          notify(cmd.title, "🔔");
-        } else if (cmd.type === 'FORCE_PROFILE_EDIT') {
-          setActiveTab('profil');
-          setProfileForm({ pseudo: userData?.pseudo || '', bio: userData?.bio || '', avatarUrl: userData?.avatarUrl || '' });
-          setIsEditingProfile(true);
-          notify("Le Maître du Jeu a ouvert votre profil !", "⚡");
-        }
-      }
-    });
-    return () => unsubAdmin();
-  }, [user, userData]);
-
-  useEffect(() => {
-    if (!user) return;
-    const userRef = doc(db, 'artifacts', appId, 'users', user.uid);
-    let unsubPartner = () => {};
-    let unsubPartnerCustom = () => {};
-    let unsubGlobalChat = () => {};
-
-    const unsubUser = onSnapshot(userRef, (snap) => {
-      if (!snap.exists()) {
-        const initial = { 
-          uid: user.uid, pseudo: user.displayName || 'Anonyme', bio: 'Explorateur de sensations...',
-          avatarUrl: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}&backgroundColor=1e293b`,
-          likes: [], pairCode: Math.random().toString(36).substring(2, 8).toUpperCase(), 
-          partnerUid: null, mood: 'playful', lastIntimacy: 0, pingToPartner: 0, partnerNote: ''
-        };
-        setDoc(userRef, initial);
-        setUserData(initial);
-        myLikesRef.current = [];
-      } else {
-        const data = snap.data();
-        setUserData(data);
-        myLikesRef.current = data.likes || [];
-
-        if (data.partnerUid) {
-          unsubPartner = onSnapshot(doc(db, 'artifacts', appId, 'users', data.partnerUid), (pSnap) => {
-            if (pSnap.exists()) {
-               const pData = pSnap.data();
-               setPartnerData(pData);
-               
-               if (pData.pingToPartner && pData.pingToPartner > lastSeenPingRef.current) {
-                  if (Date.now() - pData.pingToPartner < 60000) {
-                     notify(`${pData.pseudo || 'Votre partenaire'} a très envie de vous... 🔥`, '🔔');
-                     fireSystemNotification("Nouveau Signal 🔥", `${pData.pseudo || 'Votre partenaire'} a très envie de vous...`);
-                  }
-                  lastSeenPingRef.current = pData.pingToPartner;
-               }
-
-               const pLikes = pData.likes || [];
-               const newlyLiked = pLikes.filter(id => !prevPartnerLikesRef.current.includes(id));
-               newlyLiked.forEach(likedId => {
-                 if (myLikesRef.current.includes(likedId)) {
-                    notify("NOUVEAU MATCH PARFAIT !", "🔥");
-                    fireSystemNotification("Match ! 🔥", `${pData.pseudo || 'Votre partenaire'} a la même envie !`);
-                 }
-               });
-               prevPartnerLikesRef.current = pLikes;
-            }
-          });
-
-          const chatId = [user.uid, data.partnerUid].sort().join('_');
-          const chatRef = collection(db, 'artifacts', appId, 'chats', chatId, 'messages');
-          const qChat = query(chatRef, orderBy('createdAt', 'desc'), limit(1));
-          unsubGlobalChat = onSnapshot(qChat, (cSnap) => {
-             if (!cSnap.empty) {
-                const msg = cSnap.docs[0].data();
-                if (msg.uid === data.partnerUid && msg.createdAt > Date.now() - 5000) {
-                   notify("Nouveau message secret 💌", "💬");
-                   fireSystemNotification("Message Intime 💌", msg.text);
-                }
-             }
-          });
-
-          const partnerCustomCol = collection(db, 'artifacts', appId, 'users', data.partnerUid, 'customPositions');
-          unsubPartnerCustom = onSnapshot(partnerCustomCol, (cSnap) => {
-            const partnerPositions = cSnap.docs
-              .map(d => ({ id: d.id, ...d.data(), isCustom: true, isPartner: true }))
-              .filter(p => p.shared !== false); 
-            setPartnerCustomPositions(partnerPositions);
-          });
-        } else {
-          setPartnerCustomPositions([]);
-          setPartnerData(null);
-        }
-      }
-      setLoading(false);
-    });
-
-    const myCustomCol = collection(db, 'artifacts', appId, 'users', user.uid, 'customPositions');
-    const unsubMyCustom = onSnapshot(myCustomCol, (snap) => {
-      setMyCustomPositions(snap.docs.map(d => ({ id: d.id, ...d.data(), isCustom: true, isMine: true })));
-    });
-
-    return () => { unsubUser(); unsubPartner(); unsubPartnerCustom(); unsubGlobalChat(); };
-  }, [user]);
-
-  // --- ÉCOUTE DES JEUX EN TEMPS RÉEL (Mystère, Coffre, Question) ---
-  useEffect(() => {
-    if (!user || !userData?.partnerUid) return;
-    const chatId = [user.uid, userData.partnerUid].sort().join('_');
-    const gameRef = doc(db, 'artifacts', appId, 'games', chatId);
-    
-    const unsub = onSnapshot(gameRef, (snap) => {
-      if (snap.exists()) {
-        const data = snap.data();
-        setBlurGameData(data.blurGame || null);
-        setVaultData(data.vault || null);
-        setDailyQData(data.dailyQ || null);
-      } else {
-        setBlurGameData(null);
-        setVaultData(null);
-        setDailyQData(null);
-      }
-    });
-    return () => unsub();
-  }, [user, userData?.partnerUid]);
-
-  useEffect(() => {
-    if (!blurGameData || blurGameData.senderId === user?.uid) return;
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const elapsed = now - blurGameData.startTime;
-      const progress = Math.min(1, Math.max(0, elapsed / blurGameData.durationMs));
-      setCurrentBlur(20 - (progress * 20));
-
-      const remaining = Math.max(0, blurGameData.durationMs - elapsed);
-      if (remaining === 0) setTimeLeft("Photo totalement dévoilée ! 🔥");
-      else {
-         const m = Math.floor(remaining / 60000);
-         const s = Math.floor((remaining % 60000) / 1000);
-         setTimeLeft(`${m}m ${s}s restants`);
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [blurGameData, user]);
-
-  const handleUploadBlurPhoto = async () => {
-    if (!blurFile || !user || !userData?.partnerUid) return;
-    setUploadingBlur(true);
-    try {
-      const chatId = [user.uid, userData.partnerUid].sort().join('_');
-      const fileName = `blurPhotos/${chatId}_${Date.now()}`;
-      const storageRef = ref(storage, fileName);
-      await uploadBytes(storageRef, blurFile);
-      const url = await getDownloadURL(storageRef);
-      await setDoc(doc(db, 'artifacts', appId, 'games', chatId), {
-        blurGame: { senderId: user.uid, imageUrl: url, imagePath: fileName, startTime: Date.now(), durationMs: blurDuration * 1000 }
-      }, { merge: true });
-      setBlurFile(null); setBlurPreview(null);
-      notify("Photo mystère envoyée !", "📸");
-      updateDoc(doc(db, 'artifacts', appId, 'users', userData.partnerUid), { pingToPartner: Date.now() });
-    } catch (e) { notify("Erreur lors de l'envoi.", "❌"); }
-    setUploadingBlur(false);
-  };
-
-  const handleDeleteBlurPhoto = async () => {
-    if (!blurGameData || !user || !userData?.partnerUid) return;
-    try {
-      const chatId = [user.uid, userData.partnerUid].sort().join('_');
-      if (blurGameData.imagePath) await deleteObject(ref(storage, blurGameData.imagePath)).catch(e=>console.log(e));
-      await setDoc(doc(db, 'artifacts', appId, 'games', chatId), { blurGame: null }, { merge: true });
-      setBlurGameData(null); notify("Photo supprimée.", "🗑️");
-    } catch (e) { notify("Erreur", "❌"); }
-  };
-
-  // --- ACTIONS DU COFFRE-FORT ---
-  const handleCreateVault = async () => {
-    if (!vaultCondition.trim() || !user || !userData?.partnerUid) return;
-    if (vaultType === 'text' && !vaultSecret.trim()) return;
-    if (vaultType === 'photo' && !vaultRewardPhoto) return;
-
-    setUploadingBlur(true);
-    let url = null;
-    let path = null;
-
-    try {
-      if (vaultType === 'photo') {
-        const chatId = [user.uid, userData.partnerUid].sort().join('_');
-        path = `vaultPhotos/${chatId}_${Date.now()}`;
-        const storageRef = ref(storage, path);
-        await uploadBytes(storageRef, vaultRewardPhoto);
-        url = await getDownloadURL(storageRef);
-      }
-
-      const chatId = [user.uid, userData.partnerUid].sort().join('_');
-      await setDoc(doc(db, 'artifacts', appId, 'games', chatId), {
-        vault: { 
-          creatorId: user.uid, 
-          type: vaultType,
-          condition: vaultCondition.trim(),
-          secret: vaultType === 'text' ? vaultSecret.trim() : null, 
-          imageUrl: url,
-          imagePath: path,
-          keysRequired: vaultKeysReq, 
-          keysObtained: 0, 
-          createdAt: Date.now() 
-        }
-      }, { merge: true });
-      
-      setVaultSecret(''); setVaultCondition(''); setVaultRewardPhoto(null); setVaultRewardPreview(null);
-      notify("Coffre-fort verrouillé !", "🔒");
-      updateDoc(doc(db, 'artifacts', appId, 'users', userData.partnerUid), { pingToPartner: Date.now() }); 
-    } catch (e) {
-      notify("Erreur lors du verrouillage.", "❌");
-    }
-    setUploadingBlur(false);
-  };
-
-  const handleGiveKey = async () => {
-    if (!vaultData || !user || !userData?.partnerUid) return;
-    const chatId = [user.uid, userData.partnerUid].sort().join('_');
-    const newKeys = vaultData.keysObtained + 1;
-    await setDoc(doc(db, 'artifacts', appId, 'games', chatId), { vault: { ...vaultData, keysObtained: newKeys } }, { merge: true });
-    notify("Clé offerte !", "🔑");
-    if (newKeys >= vaultData.keysRequired) notify("Le coffre est ouvert !", "🔓");
-  };
-
-  const handleDeleteVault = async () => {
-    if (!user || !userData?.partnerUid) return;
-    const chatId = [user.uid, userData.partnerUid].sort().join('_');
-    if (vaultData?.imagePath) await deleteObject(ref(storage, vaultData.imagePath)).catch(e=>console.log(e));
-    await setDoc(doc(db, 'artifacts', appId, 'games', chatId), { vault: null }, { merge: true });
-    notify("Coffre supprimé", "🗑️");
-  };
-
-  // --- ACTIONS QUESTION DU JOUR ---
-  const todayStr = new Date().toISOString().split('T')[0];
-  const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 1000 / 60 / 60 / 24);
-  const todaysQuestion = DAILY_QUESTIONS[dayOfYear % DAILY_QUESTIONS.length];
-
-  const handleAnswerDailyQ = async () => {
-    if (!myDailyAnswer.trim() || !user || !userData?.partnerUid) return;
-    const chatId = [user.uid, userData.partnerUid].sort().join('_');
-    
-    // Check if dailyQData is from today, if not, reset it
-    let currentQ = dailyQData;
-    if (!currentQ || currentQ.date !== todayStr) {
-      currentQ = { date: todayStr };
-    }
-
-    const isUser1 = user.uid < userData.partnerUid; // Just consistent mapping
-    if (isUser1) currentQ.u1Answer = myDailyAnswer.trim();
-    else currentQ.u2Answer = myDailyAnswer.trim();
-
-    await setDoc(doc(db, 'artifacts', appId, 'games', chatId), { dailyQ: currentQ }, { merge: true });
-    setMyDailyAnswer('');
-    notify("Réponse envoyée !", "💬");
-    updateDoc(doc(db, 'artifacts', appId, 'users', userData.partnerUid), { pingToPartner: Date.now() });
-  };
-
-  const displayCategories = useMemo(() => {
-    const baseCats = [...CATEGORIES];
-    const baseIds = baseCats.map(c => c.id);
-    const customIds = new Set();
-    [...myCustomPositions, ...partnerCustomPositions].forEach(p => { if(p.cat && !baseIds.includes(p.cat)) customIds.add(p.cat); });
-    const newCats = Array.from(customIds).map(id => ({ id, icon: <FolderPlus size={14}/>, color: 'from-slate-700/40 to-slate-900/40', text: 'text-slate-300' }));
-    return [...baseCats, ...newCats];
-  }, [myCustomPositions, partnerCustomPositions]);
-
-  const allPositions = useMemo(() => [...FULL_CATALOG, ...myCustomPositions, ...partnerCustomPositions], [myCustomPositions, partnerCustomPositions]);
-
-  const filteredPositions = useMemo(() => {
-    let result = allPositions.filter(pos => {
-      const matchSearch = pos.name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchSpice = filterSpice === 0 || pos.spice === filterSpice;
-      const matchPhysique = filterPhysique === 0 || pos.diff === filterPhysique;
-      const matchCat = filterCat === 'Toutes' || pos.cat === filterCat;
-      return matchSearch && matchSpice && matchPhysique && matchCat;
-    });
-    return result.sort((a, b) => {
-      if (sortBy === 'spice') return b.spice - a.spice; 
-      if (sortBy === 'diff') return a.diff - b.diff;    
-      return a.name.localeCompare(b.name);              
-    });
-  }, [allPositions, searchQuery, filterSpice, filterPhysique, filterCat, sortBy]);
-
-  const positionDuJour = useMemo(() => FULL_CATALOG[dayOfYear % FULL_CATALOG.length], [dayOfYear]);
-
-  const resetFilters = () => { setSearchQuery(''); setFilterSpice(0); setFilterPhysique(0); setFilterCat('Toutes'); setSortBy('az'); };
-
-  const notify = (msg, icon = '✨') => {
-    const id = Date.now() + Math.random(); // FIXED: Unique IDs to prevent stuck notifications
-    setNotifications(prev => [...prev, { id, msg, icon }]);
-    setTimeout(() => setNotifications(prev => prev.filter(n => n.id !== id)), 4000);
-  };
-
-  const sendSignal = async () => {
-    if (!user || !userData?.partnerUid) return;
-    notify("Signal envoyé à votre partenaire !", "💌");
-    await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid), { pingToPartner: Date.now() });
-  };
-
-  const updateMyMood = async (moodId) => {
-    if (!user) return;
-    await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid), { mood: moodId });
-    notify("Humeur mise à jour", "🎭");
-  };
-
-  const logIntimacy = async () => {
-    if (!user) return;
-    await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid), { lastIntimacy: Date.now() });
-    notify("Moment intime enregistré", "❤️");
-  };
-
-  const getDaysSinceIntimacy = () => {
-    const myDate = userData?.lastIntimacy || 0;
-    const partnerDate = partnerData?.lastIntimacy || 0;
-    const maxDate = Math.max(myDate, partnerDate);
-    if (maxDate === 0) return "Aucun moment";
-    const days = Math.floor((Date.now() - maxDate) / (1000 * 60 * 60 * 24));
-    if (days === 0) return "Aujourd'hui 🔥";
-    if (days === 1) return "Hier";
-    return `Il y a ${days} jours`;
-  };
-
-  const handleGoogleLogin = async () => {
-    const provider = new GoogleAuthProvider();
-    try { await signInWithPopup(auth, provider); } catch (error) { notify("Erreur lors de la connexion", "❌"); }
-  };
-
-  const requestNotificationPermission = async () => {
-    if (!('Notification' in window)) return notify("Non supporté.", "❌");
-    try {
-      const permission = await Notification.requestPermission();
-      if (permission === 'granted') { setNotificationsEnabled(true); notify("Notifications activées !", "🔔"); }
-      else notify("Permission refusée.", "❌");
-    } catch (e) { notify("Erreur.", "❌"); }
-  };
-
-  const handleSaveProfile = async () => {
-    if (!user) return;
-    await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid), { pseudo: profileForm.pseudo, bio: profileForm.bio, avatarUrl: profileForm.avatarUrl });
-    setIsEditingProfile(false); notify("Profil mis à jour !", "👤");
-  };
-
-  const handleSavePartnerNote = async () => {
-    if (!user) return;
-    await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid), { partnerNote });
-    notify("Note sauvegardée !", "📝");
-  };
-
-  const generateNewAvatar = () => {
-    setProfileForm({ ...profileForm, avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${Math.random().toString(36).substring(7)}&backgroundColor=1e293b` });
-  };
-
-  const handleLike = async (id) => {
-    if (!user || !userData) return;
-    const userRef = doc(db, 'artifacts', appId, 'users', user.uid);
-    if (userData.likes?.includes(id)) await updateDoc(userRef, { likes: userData.likes.filter(l => l !== id) });
-    else {
-      await updateDoc(userRef, { likes: arrayUnion(id) });
-      if (partnerData?.likes?.includes(id)) {
-        notify("MATCH PARFAIT !", "🔥");
-        fireSystemNotification("Match Parfait ! 🔥", "Vous avez la même envie...");
-      }
-    }
-  };
-
-  const handleOpenEdit = (pos) => {
-    const isKnownCat = displayCategories.some(c => c.id === pos.cat);
-    setNewPos({ name: pos.name, cat: isKnownCat ? pos.cat : 'NEW', newCat: isKnownCat ? '' : pos.cat, desc: pos.desc, v: pos.v || '', diff: pos.diff, spice: pos.spice, shared: pos.shared !== false });
-    setEditPosId(pos.id); setSelectedPosition(null); setShowDeleteConfirm(false); setIsCreating(true);
-  };
-
-  const handleSavePosition = async () => {
-    if (!newPos.name || !newPos.desc) return notify("Veuillez remplir le nom et la description.", "⚠️");
-    let finalCat = newPos.cat === 'NEW' ? (newPos.newCat.trim() !== '' ? newPos.newCat.trim() : 'Personnalisé') : newPos.cat;
-    const posData = { name: newPos.name, cat: finalCat, desc: newPos.desc, v: newPos.v, diff: newPos.diff, spice: newPos.spice, shared: newPos.shared, authorId: user.uid };
-    if (editPosId) {
-      await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'customPositions', editPosId), posData);
-      notify("Création modifiée !", "✏️");
-    } else {
-      await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'customPositions'), { ...posData, createdAt: Date.now() });
-      notify("Nouvelle position créée !", "🌟");
-    }
-    setIsCreating(false); setEditPosId(null);
-    setNewPos({ name: '', cat: 'Face à face', newCat: '', desc: '', v: '', diff: 3, spice: 3, shared: true });
-    setActiveTab('explorer');
-  };
-
-  const handleDeletePosition = async () => {
-    if(!selectedPosition || !selectedPosition.isMine) return;
-    await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'customPositions', selectedPosition.id));
-    setSelectedPosition(null); setShowDeleteConfirm(false); notify("Création supprimée", "🗑️");
-  };
-
-  const handleLinkPartner = async () => {
-    if (!partnerCodeInput || partnerCodeInput.length !== 6) return notify("Code invalide", "❌");
-    if (partnerCodeInput === userData.pairCode) return notify("Vous ne pouvez pas vous lier à vous-même", "⚠️");
-    try {
-      const q = query(collection(db, 'artifacts', appId, 'users'), where("pairCode", "==", partnerCodeInput));
-      const querySnapshot = await getDocs(q);
-      if (querySnapshot.empty) return notify("Ce code n'appartient à personne.", "❌");
-      await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid), { partnerUid: querySnapshot.docs[0].id });
-      notify("Liaison réussie !", "🔗");
-    } catch (error) { notify("Erreur de recherche.", "❌"); }
-  };
-
-  const handleUnlinkPartner = async () => {
-    if (!user) return;
-    if (window.confirm("Voulez-vous vraiment vous séparer de ce partenaire ?")) {
-      await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid), { partnerUid: null });
-      notify("Partenaire délié", "🔓");
-    }
-  };
-
-  const handleSubmitIdea = async () => {
-    if (!ideaText.trim() || !user) return;
-    try {
-      await addDoc(collection(db, 'artifacts', appId, 'ideas'), { uid: user.uid, pseudo: userData?.pseudo || 'Anonyme', text: ideaText.trim(), status: 'pending', createdAt: Date.now() });
-      setIdeaText(''); setShowIdeaModal(false); notify("Idée envoyée !", "💡");
-    } catch (e) { notify("Erreur d'envoi", "❌"); }
-  };
-
-  // --- LOGIQUE CHAT ---
-  useEffect(() => {
-    if (!isChatOpen || !user || !userData?.partnerUid) return;
-    const chatId = [user.uid, userData.partnerUid].sort().join('_');
-    const q = query(collection(db, 'artifacts', appId, 'chats', chatId, 'messages'), orderBy('createdAt', 'asc'), limit(50));
-    const unsub = onSnapshot(q, (snap) => setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
-    return () => unsub();
-  }, [isChatOpen, user, userData?.partnerUid]);
-
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, isChatOpen]);
-
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!newMessage.trim() || !user || !userData?.partnerUid) return;
-    const chatId = [user.uid, userData.partnerUid].sort().join('_');
-    const msgText = newMessage.trim(); setNewMessage(''); 
-    await addDoc(collection(db, 'artifacts', appId, 'chats', chatId, 'messages'), { text: msgText, uid: user.uid, createdAt: Date.now() });
-  };
-
-  const handleSaveEditMessage = async () => {
-    if (!editingMsgId || !editMsgText.trim() || !user || !userData?.partnerUid) return;
-    const chatId = [user.uid, userData.partnerUid].sort().join('_');
-    await updateDoc(doc(db, 'artifacts', appId, 'chats', chatId, 'messages', editingMsgId), { text: editMsgText.trim(), edited: true });
-    setEditingMsgId(null); setEditMsgText(''); notify("Message modifié", "✏️");
-  };
-
-  const handleDeleteMessage = async (msgId) => {
-    if (!user || !userData?.partnerUid) return;
-    const chatId = [user.uid, userData.partnerUid].sort().join('_');
-    await deleteDoc(doc(db, 'artifacts', appId, 'chats', chatId, 'messages', msgId));
-    notify("Message supprimé", "🗑️");
-  };
-
-  const applyDiscreet = (text, type = 'desc') => discreetMode ? (type === 'title' ? "Masqué" : text.replace(/[a-zA-Z]/g, "x")) : text;
-
-  const triggerGameResult = (type) => {
-    let result = null;
-    switch(type) {
-      case 'truth': result = GAMES_DATA.truths[Math.floor(Math.random() * GAMES_DATA.truths.length)]; break;
-      case 'dare': result = GAMES_DATA.dares[Math.floor(Math.random() * GAMES_DATA.dares.length)]; break;
-      case 'dice': result = `${GAMES_DATA.diceActions[Math.floor(Math.random() * GAMES_DATA.diceActions.length)]} ➔ ${GAMES_DATA.diceZones[Math.floor(Math.random() * GAMES_DATA.diceZones.length)]} \n${GAMES_DATA.diceDurations[Math.floor(Math.random() * GAMES_DATA.diceDurations.length)]}`; break;
-      case 'scenario': result = `Lieu : ${GAMES_DATA.scenPlaces[Math.floor(Math.random() * GAMES_DATA.scenPlaces.length)]}\nRôle : ${GAMES_DATA.scenRoles[Math.floor(Math.random() * GAMES_DATA.scenRoles.length)]}\nTwist : ${GAMES_DATA.scenTwists[Math.floor(Math.random() * GAMES_DATA.scenTwists.length)]}`; break;
-      case 'roulette': result = GAMES_DATA.rouletteTasks[Math.floor(Math.random() * GAMES_DATA.rouletteTasks.length)]; break;
-      case 'secret': result = GAMES_DATA.secretChallenges[Math.floor(Math.random() * GAMES_DATA.secretChallenges.length)]; break;
-      default: break;
-    }
-    setGameResult(result);
-  };
-  if (loading) return (
-    <div className="fixed inset-0 bg-slate-950 sm:bg-black flex items-center justify-center font-sans">
-      <div className="w-full h-full sm:max-w-[430px] sm:max-h-[900px] sm:rounded-[3rem] sm:border-[8px] border-slate-900 bg-slate-950 flex flex-col items-center justify-center text-rose-500 relative overflow-hidden">
-        <Flame className="animate-pulse" size={48} />
-      </div>
-    </div>
-  );
-
-  if (requireLogin) return (
-    <div className="fixed inset-0 bg-slate-950 sm:bg-black flex items-center justify-center font-sans">
-      <div className="w-full h-full sm:max-w-[430px] sm:max-h-[900px] sm:rounded-[3rem] sm:border-[8px] border-slate-900 bg-slate-950 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden z-[999]">
-        <Flame className="text-rose-500 mb-6 drop-shadow-[0_0_15px_rgba(244,63,94,0.5)]" size={64} />
-        <h1 className="text-4xl font-black text-white mb-2 tracking-tighter">KAMA<span className="text-rose-500">SYNC</span></h1>
-        <p className="text-slate-400 mb-10 text-sm">Connectez-vous pour synchroniser vos données sur tous vos appareils sans rien perdre.</p>
-        <button onClick={handleGoogleLogin} className="w-full max-w-xs bg-white text-slate-900 px-6 py-4 rounded-2xl font-black transition hover:bg-slate-200 shadow-xl shadow-white/10 flex items-center justify-center gap-3">
-          <LogIn size={20} /> Connexion avec Google
-        </button>
-      </div>
-    </div>
-  );
-
-  const sharedLikes = allPositions.filter(p => userData?.likes?.includes(p.id) && partnerData?.likes?.includes(p.id));
-  const isUser1 = user?.uid < userData?.partnerUid;
-  const myAnswerToday = isUser1 ? dailyQData?.u1Answer : dailyQData?.u2Answer;
-  const partnerAnswerToday = isUser1 ? dailyQData?.u2Answer : dailyQData?.u1Answer;
+  if (isLoading) return <LoadingScreen />;
 
   return (
-    <div className="fixed inset-0 bg-slate-950 sm:bg-black flex items-center justify-center font-sans" style={{ WebkitTapHighlightColor: 'transparent' }}>
-      <div className="w-full h-full sm:max-w-[430px] sm:max-h-[900px] sm:rounded-[3rem] sm:border-[8px] border-slate-900 bg-slate-950 text-slate-100 flex flex-col relative sm:shadow-2xl overflow-hidden">
-        
-        <header className="px-6 border-b border-white/5 flex items-center justify-between bg-slate-950/80 backdrop-blur-xl z-50 shrink-0" style={{ paddingTop: 'max(env(safe-area-inset-top), 1.25rem)', paddingBottom: '1.25rem' }}>
-          <div className="flex items-center gap-2 text-rose-500 font-black text-2xl tracking-tighter">
-            <Flame fill="currentColor" size={28} className="drop-shadow-[0_0_15px_rgba(244,63,94,0.5)]" /> 
-            KAMA<span className="text-white">SYNC</span>
+    <div className="fixed inset-0 bg-slate-950 text-slate-100 flex flex-col font-sans overflow-hidden">
+      
+      {/* HEADER GLOBALE */}
+      {!selectedModule && (
+        <header className="px-6 pt-6 pb-2 bg-slate-950 flex justify-between items-center z-40 relative">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center text-slate-950 shadow-lg shadow-amber-500/20">
+              <HardHat size={22} className="block" />
+            </div>
+            <div>
+              <h1 className="text-xl font-black text-white tracking-tight leading-none">Bâti<span className="text-amber-500">Pro</span></h1>
+              <span className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">Académie Maçonnerie</span>
+            </div>
           </div>
-          <div className="flex gap-4 items-center">
-            <button onClick={() => setDiscreetMode(!discreetMode)} className="text-slate-400 p-2">
-              {discreetMode ? <EyeOff size={20} className="text-emerald-400" /> : <Eye size={20} />}
-            </button>
+          <div className="w-10 h-10 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center text-slate-400">
+            <User size={18} />
           </div>
         </header>
+      )}
 
-        <div className="absolute top-28 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 pointer-events-none items-center w-full px-4">
-          {notifications.map(n => (
-            <div key={n.id} onClick={() => setNotifications(prev => prev.filter(notif => notif.id !== n.id))} className="bg-slate-800/95 backdrop-blur-md text-white px-6 py-3 rounded-2xl text-xs font-bold shadow-2xl flex items-center gap-3 border border-white/10 cursor-pointer pointer-events-auto hover:bg-slate-700 transition">
-              <span className="text-lg">{n.icon}</span> {n.msg} <X size={12} className="ml-2 opacity-50" />
-            </div>
-          ))}
-        </div>
-
-        <main className="flex-1 overflow-y-auto custom-scroll relative" style={{ WebkitOverflowScrolling: 'touch', paddingBottom: 'calc(env(safe-area-inset-bottom) + 120px)' }}>
-          
-          {/* --- TAB 1: EXPLORER --- */}
-          {activeTab === 'explorer' && (
-            <div className="animate-in fade-in duration-500">
-              <div className="px-6 py-8">
-                <div onClick={() => setSelectedPosition(positionDuJour)} className="bg-gradient-to-br from-rose-600 to-orange-500 rounded-3xl p-6 relative overflow-hidden cursor-pointer shadow-lg shadow-rose-900/20 active:scale-[0.98] transition-all">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10" />
-                  <div className="flex items-center gap-2 text-white/80 text-xs font-black uppercase tracking-widest mb-3"><Calendar size={14} /> Position du jour</div>
-                  <h2 className="text-2xl font-black text-white mb-1">{discreetMode ? "Masqué" : positionDuJour.name}</h2>
-                  <p className={`text-white/80 text-sm line-clamp-2 ${discreetMode ? 'blur-sm select-none opacity-50' : ''}`}>{applyDiscreet(positionDuJour.desc)}</p>
-                </div>
+      {/* CONTENU */}
+      <main className="flex-1 overflow-y-auto custom-scroll pb-24 relative">
+        
+        {/* --- ACCUEIL --- */}
+        {activeTab === 'home' && !selectedModule && (
+          <div className="animate-in slide-in-from-bottom-4 fade-in duration-500 space-y-8 p-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl flex flex-col items-center justify-center text-center shadow-lg hover:border-amber-500/30 transition-colors">
+                <Trophy className="text-amber-500 mb-2" size={28} />
+                <span className="text-2xl font-black text-white">Niv. 3</span>
+                <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Apprenti</span>
               </div>
+              <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl flex flex-col items-center justify-center text-center shadow-lg hover:border-emerald-500/30 transition-colors">
+                <CheckCircle2 className="text-emerald-500 mb-2" size={28} />
+                <span className="text-2xl font-black text-white">4</span>
+                <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Leçons finies</span>
+              </div>
+            </div>
 
-              <div className="px-6 mb-8 space-y-4">
-                <div className="relative group">
-                  <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-                  <input type="text" placeholder="Rechercher..." className="w-full bg-slate-900 border border-slate-800 rounded-3xl py-4 pl-14 pr-4 outline-none focus:border-rose-500 text-base" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl p-6 shadow-xl shadow-orange-900/20 relative overflow-hidden group cursor-pointer hover:scale-[1.02] transition-transform">
+              <Flame className="absolute -right-4 -bottom-4 text-white/10 group-hover:scale-110 transition-transform duration-700" size={120} />
+              <span className="bg-white/20 text-white text-[10px] font-black uppercase px-3 py-1 rounded-full backdrop-blur-md border border-white/20">Astuce du Chef</span>
+              <h3 className="text-xl font-black text-white mt-4 mb-2">Mouiller ses parpaings</h3>
+              <p className="text-white/90 text-sm leading-relaxed">
+                En été, pensez à humidifier légèrement vos parpaings avant de les poser. S'ils sont trop secs, ils "boiront" l'eau de votre mortier.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-lg font-black text-white mb-4">Reprendre le chantier</h2>
+              <div onClick={() => { setSelectedModule(MODULES[1]); setActiveTab('courses'); }} className="bg-slate-900 border border-slate-800 rounded-3xl p-4 flex items-center gap-4 cursor-pointer hover:bg-slate-800 hover:border-amber-500/50 transition-all shadow-lg active:scale-95">
+                <div className="w-16 h-16 rounded-2xl bg-stone-800 flex items-center justify-center text-stone-400 shrink-0">
+                  <Layers size={28} />
                 </div>
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2"><Filter size={12}/> Filtres & Tri</span>
-                    {(searchQuery || filterSpice > 0 || filterPhysique > 0 || filterCat !== 'Toutes' || sortBy !== 'az') && (
-                      <button onClick={resetFilters} className="text-[10px] font-black text-rose-500 uppercase">Réinitialiser</button>
-                    )}
-                  </div>
-                  <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-                    <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-[10px] font-bold text-emerald-400 min-w-[120px] text-base">
-                      <option value="az">Trier : A-Z</option><option value="spice">Trier : Plus épicé</option><option value="diff">Trier : Moins physique</option>
-                    </select>
-                    <select value={filterCat} onChange={(e) => setFilterCat(e.target.value)} className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-[10px] font-bold text-slate-300 min-w-[120px] text-base">
-                      <option value="Toutes">Catégories</option><option value="Toutes">Toutes</option>
-                      {displayCategories.map(c => <option key={c.id} value={c.id}>{c.id}</option>)}
-                    </select>
+                <div className="flex-1">
+                  <h4 className="font-bold text-white text-sm">Fondations & Dalles</h4>
+                  <p className="text-xs text-slate-400 mb-2">Leçon : Ferraillage...</p>
+                  <div className="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden">
+                    <div className="bg-amber-500 h-full rounded-full" style={{ width: '30%' }}></div>
                   </div>
                 </div>
-              </div>
-
-              {displayCategories.map(category => {
-                if (filterCat !== 'Toutes' && category.id !== filterCat) return null;
-                const categoryPositions = filteredPositions.filter(p => p.cat === category.id);
-                if (categoryPositions.length === 0) return null;
-                return (
-                  <section key={category.id} className="mb-10 px-6">
-                    <h2 className={`text-lg font-black tracking-tight flex items-center gap-2 mb-4 ${category.text}`}>{category.icon} {category.id}</h2>
-                    <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4 snap-x">
-                      {categoryPositions.map(pos => {
-                        const isMatch = userData?.likes?.includes(pos.id) && partnerData?.likes?.includes(pos.id);
-                        return (
-                          <div key={pos.id} onClick={() => setSelectedPosition(pos)} className={`relative snap-center shrink-0 w-48 bg-gradient-to-br ${category.color} border ${isMatch ? 'border-amber-500/50' : 'border-white/5'} rounded-[2rem] p-5 cursor-pointer hover:scale-[1.02] transition-all`}>
-                            <div className="absolute top-3 right-3 flex flex-col gap-1 items-end">
-                              {pos.isPartner && <span className="bg-emerald-500/20 text-emerald-400 text-[8px] font-black uppercase px-2 py-0.5 rounded-full border border-emerald-500/30">De {partnerData?.pseudo || 'Partenaire'}</span>}
-                              {pos.isMine && <span className="bg-indigo-500/20 text-indigo-400 text-[8px] font-black uppercase px-2 py-0.5 rounded-full border border-indigo-500/30">Moi</span>}
-                            </div>
-                            <div className="flex justify-between items-start mb-4">
-                               <div className="flex gap-0.5 mt-1">{[...Array(5)].map((_, i) => <div key={i} className={`w-1 h-1.5 rounded-full ${i < pos.spice ? 'bg-rose-500' : 'bg-white/10'}`}></div>)}</div>
-                               {isMatch ? <Star size={14} fill="#f59e0b" className="text-amber-500 mt-1" /> : userData?.likes?.includes(pos.id) && <Heart size={14} fill="#f43f5e" className="text-rose-500 mt-1" />}
-                            </div>
-                            <h3 className="font-bold text-base text-white mb-2 pr-6">{discreetMode ? "Masqué" : pos.name}</h3>
-                            <p className={`text-[10px] text-white/50 line-clamp-3 ${discreetMode ? 'blur-[3px] opacity-40 select-none' : ''}`}>{applyDiscreet(pos.desc)}</p>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </section>
-                );
-              })}
-            </div>
-          )}
-
-          {/* --- TAB 2: JEUX --- */}
-          {activeTab === 'jeux' && !activeGame && (
-            <div className="animate-in fade-in duration-500 p-6 mt-4">
-               <div className="text-center mb-10">
-                 <Gamepad2 className="mx-auto text-purple-500 mb-4" size={48} />
-                 <h1 className="text-3xl font-black text-white mb-2">Zone de Jeux</h1>
-                 <p className="text-slate-400 text-sm">Choisissez votre expérience pour ce soir.</p>
-               </div>
-               <div className="grid grid-cols-1 gap-4">
-                 
-                 {/* NOUVEAU: QUESTION DU JOUR */}
-                 <button onClick={() => setActiveGame('dailyQ')} className="bg-slate-900 border border-slate-800 rounded-3xl p-5 text-left flex items-center justify-between group hover:bg-slate-800 transition relative overflow-hidden shadow-[0_0_15px_rgba(236,72,153,0.15)] border-pink-500/30">
-                   <div className="absolute top-0 right-0 w-24 h-24 bg-pink-500/10 rounded-full blur-xl -mr-10 -mt-10 pointer-events-none" />
-                   <div className="relative z-10">
-                    <h3 className="font-bold text-pink-500 flex items-center gap-2 mb-1"><MessageCircle size={18} /> La Question du Jour</h3>
-                    <p className="text-xs text-slate-300">Révélez votre réponse pour voir la sienne.</p>
-                   </div>
-                   <ChevronRight className="text-slate-700 group-hover:text-pink-500 relative z-10" />
-                 </button>
-
-                 <button onClick={() => setActiveGame('vault')} className="bg-slate-900 border border-slate-800 rounded-3xl p-5 text-left flex items-center justify-between group hover:bg-slate-800 transition shadow-[0_0_15px_rgba(245,158,11,0.1)] border-amber-500/30">
-                   <div><h3 className="font-bold text-amber-500 flex items-center gap-2 mb-1"><Lock size={18} /> Le Coffre-Fort</h3><p className="text-xs text-slate-400">Verrouillez un fantasme ou une photo.</p></div>
-                   <ChevronRight className="text-slate-700 group-hover:text-amber-500" />
-                 </button>
-
-                 <button onClick={() => setActiveGame('truthOrDare')} className="bg-slate-900 border border-slate-800 rounded-3xl p-5 text-left flex items-center justify-between group hover:bg-slate-800 transition">
-                   <div><h3 className="font-bold text-white flex items-center gap-2 mb-1"><Zap size={18} className="text-rose-500"/> Action ou Vérité</h3><p className="text-xs text-slate-400">Des confessions intimes et des défis charnels.</p></div>
-                   <ChevronRight className="text-slate-700 group-hover:text-white" />
-                 </button>
-                 <button onClick={() => setActiveGame('loveDice')} className="bg-slate-900 border border-slate-800 rounded-3xl p-5 text-left flex items-center justify-between group hover:bg-slate-800 transition">
-                   <div><h3 className="font-bold text-white flex items-center gap-2 mb-1"><Dices size={18} className="text-amber-500"/> Dés de l'Amour</h3><p className="text-xs text-slate-400">Laissez le hasard dicter vos caresses.</p></div>
-                   <ChevronRight className="text-slate-700 group-hover:text-white" />
-                 </button>
-                 <button onClick={() => setActiveGame('scenario')} className="bg-slate-900 border border-slate-800 rounded-3xl p-5 text-left flex items-center justify-between group hover:bg-slate-800 transition">
-                   <div><h3 className="font-bold text-white flex items-center gap-2 mb-1"><Shuffle size={18} className="text-purple-500"/> Scénario Aléatoire</h3><p className="text-xs text-slate-400">Lieu + Rôle + Twist inattendu.</p></div>
-                   <ChevronRight className="text-slate-700 group-hover:text-white" />
-                 </button>
-                 <button onClick={() => setActiveGame('blurPhoto')} className="bg-slate-900 border border-slate-800 rounded-3xl p-5 text-left flex items-center justify-between group hover:bg-slate-800 transition">
-                   <div><h3 className="font-bold text-white flex items-center gap-2 mb-1"><Camera size={18} className="text-cyan-500"/> Photo Mystère</h3><p className="text-xs text-slate-400">Une photo qui se dévoile lentement.</p></div>
-                   <ChevronRight className="text-slate-700 group-hover:text-white" />
-                 </button>
-                 <button onClick={() => setActiveGame('roulette')} className="bg-slate-900 border border-slate-800 rounded-3xl p-5 text-left flex items-center justify-between group hover:bg-slate-800 transition">
-                   <div><h3 className="font-bold text-white flex items-center gap-2 mb-1"><Timer size={18} className="text-pink-500"/> Roulette Préliminaires</h3><p className="text-xs text-slate-400">Des tâches sensorielles pour faire monter le désir.</p></div>
-                   <ChevronRight className="text-slate-700 group-hover:text-white" />
-                 </button>
-                 <button onClick={() => setActiveGame('secretChallenge')} className="bg-slate-900 border border-slate-800 rounded-3xl p-5 text-left flex items-center justify-between group hover:bg-slate-800 transition">
-                   <div><h3 className="font-bold text-white flex items-center gap-2 mb-1"><Gift size={18} className="text-emerald-500"/> Défi Secret (24h)</h3><p className="text-xs text-slate-400">Un défi à accomplir en cachette.</p></div>
-                   <ChevronRight className="text-slate-700 group-hover:text-white" />
-                 </button>
-               </div>
-            </div>
-          )}
-
-          {/* --- TAB 3: CONSEILS (GUIDE) --- */}
-          {activeTab === 'conseils' && (
-            <div className="animate-in fade-in duration-500 p-6 mt-4">
-              <h1 className="text-3xl font-black text-white mb-2">Le Guide Intime.</h1>
-              <div className="grid grid-cols-1 gap-4 mt-8">
-                {TIPS_DATA.map(tip => (
-                  <div key={tip.id} onClick={() => setSelectedTip(tip)} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-start gap-4 cursor-pointer hover:bg-slate-800/50">
-                    <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center shrink-0">{tip.icon}</div>
-                    <div>
-                      <h3 className="font-bold text-white text-base mb-1">{tip.title}</h3>
-                      <p className="text-slate-400 text-xs line-clamp-2">{tip.content}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* --- TAB 4: DUO --- */}
-          {activeTab === 'duo' && (
-            <div className="animate-in fade-in duration-500 p-6 mt-4">
-               <h1 className="text-3xl font-black text-white mb-8 text-center">Espace Duo</h1>
-               {!userData?.partnerUid ? (
-                 <div className="bg-slate-900 border border-slate-800 rounded-[2rem] p-8 text-center mb-8">
-                   <Users className="mx-auto mb-4 text-emerald-500" size={40} />
-                   <p className="text-slate-400 text-sm mb-6">Associez vos comptes pour débloquer la communication intime et partager vos créations.</p>
-                   <div className="bg-slate-950 p-4 rounded-xl mb-6">
-                     <span className="text-[10px] font-black text-slate-500 uppercase block mb-1">Votre Code Unique</span>
-                     <div className="text-2xl font-mono font-black text-white tracking-widest">{userData?.pairCode}</div>
-                   </div>
-                   <div className="flex gap-2">
-                     <input className="flex-1 bg-slate-800 border-none rounded-xl text-center font-mono uppercase text-white outline-none px-4 text-base" placeholder="CODE PARTENAIRE" value={partnerCodeInput} onChange={(e) => setPartnerCodeInput(e.target.value.toUpperCase())} maxLength={6} />
-                     <button onClick={handleLinkPartner} className="bg-emerald-600 px-6 py-3 rounded-xl font-bold text-white text-xs hover:bg-emerald-500 transition-all">LIER</button>
-                   </div>
-                 </div>
-               ) : (
-                 <div className="space-y-6">
-                   <div className="bg-slate-900 border border-slate-800 px-6 py-4 rounded-[2rem] flex items-center justify-between shadow-lg">
-                     <div>
-                       <span className="text-[10px] font-black text-slate-500 uppercase block mb-1">Mon Code Unique</span>
-                       <div className="text-lg font-mono font-black text-white tracking-widest">{userData?.pairCode}</div>
-                     </div>
-                     <div className="text-[10px] font-bold uppercase text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20">En Duo</div>
-                   </div>
-
-                   <div className="grid grid-cols-2 gap-4">
-                     <div className="bg-slate-900 border border-slate-800 p-5 rounded-[2rem] text-center flex flex-col justify-center items-center">
-                       <CalendarHeart className="text-rose-500 mb-2" size={24} />
-                       <div className="text-xs text-slate-400 font-bold mb-1">Dernière fois</div>
-                       <div className="text-lg font-black text-white mb-4">{getDaysSinceIntimacy()}</div>
-                       <button onClick={logIntimacy} className="bg-slate-800 hover:bg-rose-600 text-white text-[10px] font-bold uppercase tracking-widest py-2 px-4 rounded-full transition w-full">On l'a fait !</button>
-                     </div>
-                     <div className="bg-gradient-to-br from-indigo-600 to-purple-600 p-5 rounded-[2rem] text-center flex flex-col justify-center items-center cursor-pointer shadow-lg shadow-indigo-900/30 active:scale-95 transition" onClick={sendSignal}>
-                       <BellRing className="text-white mb-2 animate-pulse" size={28} />
-                       <div className="text-white font-black text-sm leading-tight">Envoyer un signal<br/>discret</div>
-                       <div className="text-indigo-200 text-[9px] uppercase mt-2 font-bold tracking-widest">Je te veux</div>
-                     </div>
-                   </div>
-
-                   <div onClick={() => setIsChatOpen(true)} className="bg-slate-900 border border-slate-800 p-4 rounded-[2rem] flex items-center justify-between cursor-pointer hover:bg-slate-800 transition-all shadow-lg">
-                     <div className="flex items-center gap-4">
-                       <div className="bg-rose-500/20 p-3 rounded-full text-rose-500"><MessageSquare size={24} /></div>
-                       <div><h3 className="font-bold text-white text-sm">Ouvrir le Chat Secret</h3><p className="text-slate-400 text-xs">Discutez en privé avec {partnerData?.pseudo || 'votre partenaire'}</p></div>
-                     </div>
-                     <ChevronRight className="text-slate-600" />
-                   </div>
-
-                   <div className="bg-slate-900 border border-slate-800 rounded-[2rem] p-6">
-                      <h3 className="text-sm font-black text-white mb-4 uppercase tracking-widest text-center flex items-center justify-center gap-2"><HeartHandshake size={16}/> Notre Humeur</h3>
-                      <div className="flex justify-between items-center mb-6">
-                        <div className="text-center flex-1">
-                          <div className="w-16 h-16 mx-auto rounded-full bg-slate-800 border-2 border-slate-700 overflow-hidden mb-2"><img src={userData?.avatarUrl} alt="Me" className="w-full h-full object-cover" /></div>
-                          <div className="text-xs font-bold text-slate-300">Moi</div>
-                          {userData?.mood && MOODS.find(m => m.id === userData.mood) && (
-                            <div className={`text-[10px] font-bold px-2 py-1 rounded-full mt-1 border ${MOODS.find(m => m.id === userData.mood).color}`}>{MOODS.find(m => m.id === userData.mood).icon} {MOODS.find(m => m.id === userData.mood).label}</div>
-                          )}
-                        </div>
-                        <div className="text-slate-600 font-black px-4">VS</div>
-                        <div className="text-center flex-1 cursor-pointer group" onClick={() => { setPartnerNote(userData?.partnerNote || ''); setShowPartnerProfile(true); }}>
-                          <div className="w-16 h-16 mx-auto rounded-full bg-slate-800 border-2 border-slate-700 overflow-hidden mb-2 group-hover:scale-105 transition duration-300">
-                            <img src={partnerData?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=partner&backgroundColor=1e293b`} alt="Partner" className="w-full h-full object-cover" />
-                          </div>
-                          <div className="text-xs font-bold text-slate-300 group-hover:text-white transition">{partnerData?.pseudo || 'Partenaire'}</div>
-                          {partnerData?.mood && MOODS.find(m => m.id === partnerData.mood) ? (
-                            <div className={`text-[10px] font-bold px-2 py-1 rounded-full mt-1 border ${MOODS.find(m => m.id === partnerData.mood).color}`}>{MOODS.find(m => m.id === partnerData.mood).icon} {MOODS.find(m => m.id === partnerData.mood).label}</div>
-                          ) : (
-                            <div className="text-[10px] font-bold px-2 py-1 rounded-full mt-1 border border-slate-700 text-slate-500 bg-slate-800">Mystère...</div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="pt-4 border-t border-slate-800">
-                        <div className="text-[10px] font-bold text-slate-500 uppercase text-center mb-3 tracking-widest">Changer mon humeur</div>
-                        <div className="grid grid-cols-2 gap-2">
-                          {MOODS.map(mood => (
-                            <button key={mood.id} onClick={() => updateMyMood(mood.id)} className={`p-2 rounded-xl text-xs font-bold border transition-all ${userData?.mood === mood.id ? mood.color : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
-                              {mood.icon} {mood.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                   </div>
-
-                   <div className="text-center mb-2 mt-8">
-                     <Star size={32} fill="currentColor" className="mx-auto text-amber-500 mb-2" />
-                     <h2 className="text-xl font-black text-white">Vos Matchs Parfaits</h2>
-                   </div>
-                   {sharedLikes.length === 0 ? (
-                     <div className="text-center py-6 opacity-50 text-slate-400 text-sm border border-dashed border-slate-700 rounded-3xl p-6">Aucun match pour le moment.</div>
-                   ) : (
-                     <div className="grid grid-cols-1 gap-3">
-                       {sharedLikes.map(pos => (
-                         <div key={pos.id} onClick={() => setSelectedPosition(pos)} className="bg-slate-900 p-4 rounded-xl flex items-center justify-between cursor-pointer border border-amber-500/20">
-                           <div className="flex items-center gap-3"><Flame className="text-amber-500" size={18} /><span className="font-bold text-sm text-white">{discreetMode ? "Masqué" : pos.name}</span></div>
-                           <ChevronRight className="text-slate-600" size={16} />
-                         </div>
-                       ))}
-                     </div>
-                   )}
-                   <div className="pt-8 pb-4">
-                     <button onClick={handleUnlinkPartner} className="w-full bg-rose-600/20 border border-rose-500 text-rose-500 py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-rose-600 hover:text-white transition-all shadow-[0_0_15px_rgba(225,29,72,0.3)] flex items-center justify-center gap-2">⚠️ Délier mon partenaire</button>
-                   </div>
-                 </div>
-               )}
-            </div>
-          )}
-
-          {/* --- TAB 5: PROFIL --- */}
-          {activeTab === 'profil' && (
-            <div className="animate-in fade-in duration-500 p-6 mt-4">
-              <h1 className="text-3xl font-black text-white mb-8">Mon Espace</h1>
-              <div className="flex flex-col items-center mb-10 relative">
-                 <div className="w-24 h-24 rounded-full border-4 border-slate-800 bg-slate-900 mb-4 overflow-hidden shadow-xl relative group cursor-pointer" onClick={() => { setProfileForm({ pseudo: userData?.pseudo || '', bio: userData?.bio || '', avatarUrl: userData?.avatarUrl || '' }); setIsEditingProfile(true); }}>
-                   <img src={userData?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.uid}&backgroundColor=1e293b`} alt="Avatar" className="w-full h-full object-cover" />
-                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Edit2 size={24} className="text-white" /></div>
-                 </div>
-                 <h2 className="text-2xl font-black text-white mb-2">{userData?.pseudo || 'Anonyme'}</h2>
-                 <p className="text-slate-400 text-sm text-center max-w-xs">{userData?.bio || 'Explorateur de sensations...'}</p>
-                 <div className="flex flex-col w-full max-w-xs items-center gap-3 mt-6">
-                   <button onClick={() => { setProfileForm({ pseudo: userData?.pseudo || '', bio: userData?.bio || '', avatarUrl: userData?.avatarUrl || '' }); setIsEditingProfile(true); }} className="flex items-center justify-center gap-2 bg-slate-800 text-white px-5 py-3 rounded-full text-xs font-black transition border border-slate-700 hover:bg-slate-700 w-full"><Edit2 size={14} /> Modifier mon profil</button>
-                   <button onClick={requestNotificationPermission} className={`flex items-center justify-center gap-2 px-5 py-3 rounded-full text-xs font-black transition border shadow-lg w-full mt-2 ${notificationsEnabled ? 'bg-emerald-600/20 text-emerald-400 border-emerald-500/50 hover:bg-emerald-600/40' : 'bg-rose-600/20 text-rose-400 border-rose-500/50 hover:bg-rose-600/40'}`}><BellRing size={14} /> {notificationsEnabled ? 'Notifications Activées' : 'Autoriser les notifications'}</button>
-                   <button onClick={() => setShowIdeaModal(true)} className="flex items-center justify-center gap-2 bg-amber-500/20 text-amber-400 px-5 py-3 rounded-full text-xs font-black transition border border-amber-500/50 hover:bg-amber-600/40 shadow-lg w-full mt-2"><Lightbulb size={14} /> Suggérer une idée</button>
-                   <button onClick={() => setShowInstallTutorial(true)} className="flex items-center justify-center gap-2 bg-indigo-600/20 text-indigo-400 px-5 py-3 rounded-full text-xs font-black transition border border-indigo-500/50 hover:bg-indigo-600/40 shadow-lg w-full"><Smartphone size={14} /> Ajouter à l'écran</button>
-                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4 mb-8">
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-center">
-                  <Heart className="mx-auto text-rose-500 mb-2" size={24} />
-                  <div className="text-2xl font-black text-white">{userData?.likes?.length || 0}</div>
-                  <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Favoris</div>
+                <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500">
+                  <Play size={20} className="ml-1" />
                 </div>
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-center cursor-pointer hover:bg-slate-800 transition relative overflow-hidden group" onClick={() => { setNewPos({ name: '', cat: 'Face à face', newCat: '', desc: '', v: '', diff: 3, spice: 3, shared: true }); setEditPosId(null); setIsCreating(true); }}>
-                  <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity"><Plus size={16} className="text-emerald-500"/></div>
-                  <Plus className="mx-auto text-emerald-500 mb-2" size={24} />
-                  <div className="text-2xl font-black text-white">{myCustomPositions.length}</div>
-                  <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Mes Créations</div>
-                </div>
-              </div>
-            </div>
-          )}
-        </main>
-
-        <nav className="absolute bottom-0 w-full bg-slate-950/95 backdrop-blur-2xl border-t border-slate-900 px-2 flex justify-between items-center z-40" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)', paddingTop: '0.75rem' }}>
-          <button onClick={() => {setActiveTab('explorer'); setActiveGame(null);}} className={`flex flex-col items-center gap-1 w-1/5 ${activeTab === 'explorer' ? 'text-rose-500 scale-110' : 'text-slate-500'}`}><Compass size={22}/><span className="text-[8px] font-black uppercase">Catalogue</span></button>
-          <button onClick={() => {setActiveTab('jeux'); setActiveGame(null);}} className={`flex flex-col items-center gap-1 w-1/5 ${activeTab === 'jeux' ? 'text-purple-500 scale-110' : 'text-slate-500'}`}><Gamepad2 size={24}/><span className="text-[8px] font-black uppercase">Jeux</span></button>
-          <button onClick={() => {setActiveTab('conseils'); setActiveGame(null);}} className={`flex flex-col items-center gap-1 w-1/5 ${activeTab === 'conseils' ? 'text-indigo-400 scale-110' : 'text-slate-500'}`}><BookOpen size={22}/><span className="text-[8px] font-black uppercase">Guide</span></button>
-          <button onClick={() => {setActiveTab('duo'); setActiveGame(null);}} className={`flex flex-col items-center gap-1 w-1/5 ${activeTab === 'duo' ? 'text-emerald-400 scale-110' : 'text-slate-500'}`}><Users size={22}/><span className="text-[8px] font-black uppercase">Duo</span></button>
-          <button onClick={() => {setActiveTab('profil'); setActiveGame(null);}} className={`flex flex-col items-center gap-1 w-1/5 ${activeTab === 'profil' ? 'text-white scale-110' : 'text-slate-500'}`}><User size={22}/><span className="text-[8px] font-black uppercase">Moi</span></button>
-        </nav>
-
-        {/* --- TOUTES LES MODALES GLOBALES --- */}
-
-        {/* MODAL : DÉTAILS POSITION */}
-        {selectedPosition && (
-          <div className="absolute inset-0 z-[200] bg-slate-950/95 backdrop-blur-xl flex flex-col animate-in slide-in-from-bottom duration-300">
-            <header className="px-6 flex items-center justify-between" style={{ paddingTop: 'max(env(safe-area-inset-top), 1.25rem)', paddingBottom: '1.25rem' }}>
-              <button onClick={() => { setSelectedPosition(null); setShowDeleteConfirm(false); }} className="text-slate-400 bg-slate-900 p-2 rounded-full hover:text-white transition"><ArrowLeft size={20}/></button>
-              <div className="flex gap-2">
-                <button onClick={() => handleLike(selectedPosition.id)} className="bg-slate-900 p-2 rounded-full transition">
-                  {userData?.likes?.includes(selectedPosition.id) ? <Heart size={20} fill="#f43f5e" className="text-rose-500" /> : <Heart size={20} className="text-slate-400" />}
-                </button>
-              </div>
-            </header>
-            <div className="flex-1 overflow-y-auto p-6 custom-scroll pb-32">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="bg-slate-800 text-slate-300 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-slate-700">{selectedPosition.cat}</span>
-                {selectedPosition.isMine && <span className="bg-indigo-500/20 text-indigo-400 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-500/30">Ma création</span>}
-                {selectedPosition.isPartner && <span className="bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-500/30">De {partnerData?.pseudo || 'Partenaire'}</span>}
-              </div>
-              <h2 className="text-3xl font-black text-white mb-6 leading-tight">{discreetMode ? "Position Masquée" : selectedPosition.name}</h2>
-              <div className="flex gap-4 mb-8">
-                <div className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center">
-                  <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Piment</div>
-                  <div className="flex justify-center gap-1">{[...Array(5)].map((_, i) => <Flame key={i} size={16} className={i < selectedPosition.spice ? 'text-rose-500' : 'text-slate-700'} fill={i < selectedPosition.spice ? 'currentColor' : 'none'} />)}</div>
-                </div>
-                <div className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center">
-                  <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Physique</div>
-                  <div className="flex justify-center gap-1">{[...Array(5)].map((_, i) => <Activity key={i} size={16} className={i < selectedPosition.diff ? 'text-amber-500' : 'text-slate-700'} />)}</div>
-                </div>
-              </div>
-              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 mb-6">
-                <h3 className="text-sm font-black text-white mb-3 uppercase tracking-widest flex items-center gap-2"><BookOpen size={16} className="text-indigo-400"/> Description</h3>
-                <p className={`text-slate-300 leading-relaxed text-sm ${discreetMode ? 'blur-sm select-none opacity-50' : ''}`}>{applyDiscreet(selectedPosition.desc)}</p>
-              </div>
-              {selectedPosition.v && (
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 mb-6">
-                  <h3 className="text-sm font-black text-white mb-3 uppercase tracking-widest flex items-center gap-2"><Sparkles size={16} className="text-amber-400"/> Variante</h3>
-                  <p className={`text-slate-400 italic leading-relaxed text-sm ${discreetMode ? 'blur-sm select-none opacity-50' : ''}`}>{applyDiscreet(selectedPosition.v)}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* MODAL : ARTICLE DU GUIDE (TIPS) */}
-        {selectedTip && (
-          <div className="absolute inset-0 z-[200] bg-slate-950/95 backdrop-blur-xl flex flex-col animate-in slide-in-from-bottom duration-300">
-            <header className="px-6 flex items-center justify-between border-b border-white/5 bg-slate-900/50" style={{ paddingTop: 'max(env(safe-area-inset-top), 1.25rem)', paddingBottom: '1.25rem' }}>
-              <button onClick={() => setSelectedTip(null)} className="text-slate-400 bg-slate-900 p-2 rounded-full hover:text-white transition"><ArrowLeft size={20}/></button>
-              <h2 className="font-black text-white text-xs uppercase tracking-widest">{selectedTip.cat}</h2>
-              <div className="w-9"/>
-            </header>
-            <div className="flex-1 overflow-y-auto p-6 pb-32 custom-scroll">
-              <div className="w-16 h-16 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center mb-6">{selectedTip.icon}</div>
-              <h2 className="text-3xl font-black text-white mb-4 leading-tight">{selectedTip.title}</h2>
-              <div className="flex items-center gap-2 text-slate-400 text-xs font-bold mb-8 uppercase tracking-widest">
-                <Clock size={14}/> Temps de lecture : {selectedTip.time}
-              </div>
-              <div className="text-slate-300 leading-relaxed space-y-4 whitespace-pre-line text-lg">
-                {selectedTip.content}
               </div>
             </div>
           </div>
         )}
 
-        {/* MODAL JEUX (Tous les jeux y compris DailyQ, Vault, etc.) */}
-        {activeTab === 'jeux' && activeGame && (
-          <div className="absolute inset-0 bg-slate-950 z-[150] animate-in slide-in-from-right duration-300 flex flex-col">
-            <header className="px-6 flex items-center justify-between border-b border-white/5 bg-slate-900/50" style={{ paddingTop: 'max(env(safe-area-inset-top), 1.25rem)', paddingBottom: '1.25rem' }}>
-              <button onClick={() => { setActiveGame(null); setGameResult(null); }} className="text-slate-400 p-2 bg-slate-800 rounded-full hover:text-white"><ArrowLeft size={20}/></button>
-              <div className="w-9"/>
-            </header>
+        {/* --- COURS (LISTE) --- */}
+        {activeTab === 'courses' && !selectedModule && (
+          <div className="animate-in slide-in-from-bottom-4 fade-in duration-500 p-6 space-y-4">
+            <div className="mb-6">
+              <h1 className="text-3xl font-black text-white mb-1">L'Académie</h1>
+              <p className="text-slate-400 text-sm">Maîtrisez les gestes de A à Z.</p>
+            </div>
             
-            <div className="flex-1 overflow-y-auto p-6 pb-32 flex flex-col items-center justify-start pt-8 text-center custom-scroll">
-              
-              {/* NOUVEAU: QUESTION DU JOUR */}
-              {activeGame === 'dailyQ' && (
-                <div className="w-full max-w-md">
-                  <MessageCircle size={64} className="text-pink-500 mx-auto mb-6" />
-                  <h2 className="text-3xl font-black text-white mb-6">Question du Jour</h2>
-                  {!userData?.partnerUid ? (
-                    <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-[2rem] text-center"><p className="text-slate-400">Vous devez être en Duo pour jouer à la question du jour.</p></div>
-                  ) : (
-                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-[2rem] text-center flex flex-col">
-                      <p className="text-xl font-bold text-white mb-6 leading-relaxed">"{todaysQuestion}"</p>
-                      
-                      {!myAnswerToday ? (
-                        <div className="animate-in fade-in">
-                          <textarea value={myDailyAnswer} onChange={(e) => setMyDailyAnswer(e.target.value)} placeholder="Votre réponse honnête..." className="w-full h-28 bg-slate-950 border border-slate-800 text-white rounded-2xl p-4 outline-none focus:border-pink-500 transition-colors resize-none mb-4" />
-                          <button onClick={handleAnswerDailyQ} disabled={!myDailyAnswer.trim()} className="w-full bg-pink-600 hover:bg-pink-500 disabled:bg-slate-800 disabled:text-slate-500 text-white py-4 rounded-xl font-black uppercase tracking-widest transition-colors shadow-lg shadow-pink-900/20">Envoyer ma réponse</button>
-                        </div>
-                      ) : !partnerAnswerToday ? (
-                        <div className="bg-slate-950 border border-slate-800 p-6 rounded-2xl animate-in zoom-in">
-                          <Check size={32} className="text-pink-500 mx-auto mb-2" />
-                          <h3 className="text-white font-bold mb-2">Réponse enregistrée</h3>
-                          <p className="text-slate-400 text-sm">Il ne reste plus qu'à attendre que {partnerData?.pseudo} réponde pour voir vos deux réponses !</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-4 animate-in fade-in">
-                          <div className="bg-slate-950 border border-pink-500/20 p-4 rounded-2xl text-left relative overflow-hidden">
-                            <div className="absolute top-0 left-0 w-1 h-full bg-pink-500"></div>
-                            <h4 className="text-xs font-black text-pink-500 uppercase mb-2">Ma réponse</h4>
-                            <p className="text-white text-sm">{myAnswerToday}</p>
-                          </div>
-                          <div className="bg-slate-950 border border-indigo-500/20 p-4 rounded-2xl text-left relative overflow-hidden">
-                            <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
-                            <h4 className="text-xs font-black text-indigo-400 uppercase mb-2">La réponse de {partnerData?.pseudo}</h4>
-                            <p className="text-white text-sm">{partnerAnswerToday}</p>
-                          </div>
-                        </div>
-                      )}
+            {MODULES.map((mod, index) => (
+              <div 
+                key={mod.id} 
+                onClick={() => setSelectedModule(mod)} 
+                className="bg-slate-900 border border-slate-800 rounded-[2rem] p-5 cursor-pointer hover:border-amber-500/50 hover:bg-slate-800/50 transition-all shadow-lg active:scale-95 group"
+                style={{ animationDelay: `${index * 100}ms`, animationFillMode: 'both' }}
+              >
+                <div className="flex gap-4 items-center">
+                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${mod.color} flex items-center justify-center text-white shadow-lg shrink-0 group-hover:rotate-6 transition-transform`}>
+                    {mod.icon}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-black text-white text-base">{mod.title}</h3>
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">{mod.chapters.length} leçons</span>
+                      <span className="text-[10px] font-bold text-amber-500">{mod.progress}%</span>
                     </div>
-                  )}
+                    <div className="w-full bg-slate-950 rounded-full h-1.5 mt-2 overflow-hidden">
+                      <div className="bg-amber-500 h-full rounded-full transition-all duration-1000" style={{ width: `${mod.progress}%` }}></div>
+                    </div>
+                  </div>
                 </div>
-              )}
+              </div>
+            ))}
+          </div>
+        )}
 
-              {/* COFFRE-FORT AMÉLIORÉ (Texte / Photo / Conditions) */}
-              {activeGame === 'vault' && (
-                <div className="w-full max-w-md">
-                  {vaultData?.keysObtained >= vaultData?.keysRequired ? <Unlock size={64} className="text-amber-500 mx-auto mb-6 animate-in zoom-in" /> : <Lock size={64} className="text-amber-500 mx-auto mb-6" />}
-                  <h2 className="text-3xl font-black text-white mb-6">Le Coffre-Fort</h2>
-                  {!userData?.partnerUid ? (
-                    <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-[2rem] text-center"><p className="text-slate-400">Vous devez être en Duo pour jouer au Coffre-Fort.</p></div>
-                  ) : !vaultData ? (
-                    <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-[2rem] text-center animate-in fade-in">
-                      
-                      <div className="flex bg-slate-950 rounded-xl p-1 mb-6 border border-slate-800">
-                        <button onClick={() => setVaultType('text')} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg transition ${vaultType === 'text' ? 'bg-amber-600 text-white' : 'text-slate-400'}`}>Texte Secret</button>
-                        <button onClick={() => setVaultType('photo')} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg transition ${vaultType === 'photo' ? 'bg-amber-600 text-white' : 'text-slate-400'}`}>Photo Secrète</button>
-                      </div>
+        {/* --- COURS (DÉTAIL D'UN MODULE) --- */}
+        {activeTab === 'courses' && selectedModule && (
+          <div className="animate-in slide-in-from-right duration-300 h-full flex flex-col absolute inset-0 bg-slate-950 z-50">
+            <div className={`pt-12 pb-8 px-6 bg-gradient-to-br ${selectedModule.color} rounded-b-[3rem] shadow-2xl relative shrink-0`}>
+              <button onClick={() => setSelectedModule(null)} className="absolute top-6 left-6 w-10 h-10 bg-black/20 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-black/40 transition-colors active:scale-90">
+                <ArrowLeft size={20} />
+              </button>
+              <div className="mt-8">
+                <span className="text-white/80 text-[10px] font-black uppercase tracking-widest">{selectedModule.level} • {selectedModule.duration}</span>
+                <h1 className="text-3xl font-black text-white mt-2 leading-tight">{selectedModule.title}</h1>
+              </div>
+            </div>
 
-                      <div className="text-left mb-4">
-                        <label className="text-[10px] font-black text-amber-500 uppercase block mb-2">Condition (Que doit faire votre partenaire ?)</label>
-                        <input type="text" value={vaultCondition} onChange={(e) => setVaultCondition(e.target.value)} placeholder="Ex: Me faire un massage de 20 min" className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:border-amber-500" />
-                      </div>
-
-                      {vaultType === 'text' ? (
-                        <div className="text-left mb-4">
-                          <label className="text-[10px] font-black text-amber-500 uppercase block mb-2">Récompense (Le secret)</label>
-                          <textarea value={vaultSecret} onChange={(e) => setVaultSecret(e.target.value)} placeholder="Ex: Ce soir je mets cette tenue que tu adores..." className="w-full h-24 bg-slate-950 border border-slate-800 text-white rounded-xl p-4 outline-none focus:border-amber-500 resize-none" />
-                        </div>
-                      ) : (
-                        <div className="text-left mb-4">
-                          <label className="text-[10px] font-black text-amber-500 uppercase block mb-2">Photo Récompense</label>
-                          <input type="file" accept="image/*" id="vault-photo" className="hidden" onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (file) { setVaultRewardPhoto(file); const reader = new FileReader(); reader.onloadend = () => setVaultRewardPreview(reader.result); reader.readAsDataURL(file); }
-                          }} />
-                          {vaultRewardPreview ? (
-                            <div className="relative w-full h-32 rounded-xl overflow-hidden border border-slate-700 mb-2"><img src={vaultRewardPreview} alt="Reward" className="w-full h-full object-cover" /><button onClick={() => {setVaultRewardPhoto(null); setVaultRewardPreview(null);}} className="absolute top-2 right-2 bg-slate-900 p-1 rounded-full text-rose-500"><X size={14}/></button></div>
-                          ) : (
-                            <label htmlFor="vault-photo" className="cursor-pointer bg-slate-950 border border-dashed border-slate-700 w-full py-6 rounded-xl flex flex-col items-center justify-center gap-2 text-slate-400 hover:text-white transition mb-2"><ImagePlus size={20} /> Ajouter une photo</label>
-                          )}
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between bg-slate-950 rounded-xl p-4 mb-6 border border-slate-800">
-                        <span className="text-sm font-bold text-slate-300 flex items-center gap-2"><Key size={16} className="text-amber-500"/> Clés requises</span>
-                        <select value={vaultKeysReq} onChange={(e) => setVaultKeysReq(Number(e.target.value))} className="bg-slate-800 text-white outline-none rounded-lg px-3 py-1 font-bold">
-                          {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
-                        </select>
-                      </div>
-                      <button onClick={handleCreateVault} disabled={!vaultCondition.trim() || uploadingBlur || (vaultType === 'text' && !vaultSecret.trim()) || (vaultType === 'photo' && !vaultRewardPhoto)} className="w-full bg-amber-600 hover:bg-amber-500 disabled:bg-slate-800 disabled:text-slate-500 text-white py-4 rounded-xl font-black uppercase tracking-widest transition-colors shadow-lg shadow-amber-900/20">{uploadingBlur ? "Verrouillage..." : "Verrouiller le Secret"}</button>
-                    </div>
-                  ) : vaultData.creatorId === user.uid ? (
-                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-[2rem] text-center">
-                      <span className="bg-amber-500/20 text-amber-400 text-[10px] font-black uppercase px-3 py-1 rounded-full border border-amber-500/30 mb-4 inline-block">Votre Coffre</span>
-                      <h3 className="text-xl font-bold text-white mb-2">Vous avez verrouillé un secret</h3>
-                      <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 my-4">
-                        <span className="text-[10px] font-black text-slate-500 uppercase block mb-1">Condition demandée :</span>
-                        <span className="text-sm text-white font-bold">{vaultData.condition}</span>
-                      </div>
-                      <div className="my-6 flex justify-center gap-2">{[...Array(vaultData.keysRequired)].map((_, i) => <Key key={i} size={32} className={i < vaultData.keysObtained ? "text-amber-500" : "text-slate-700"} />)}</div>
-                      <p className="text-slate-400 text-sm mb-6">Votre partenaire a <strong className="text-white">{vaultData.keysObtained} / {vaultData.keysRequired}</strong> clés.</p>
-                      {vaultData.keysObtained < vaultData.keysRequired ? <button onClick={handleGiveKey} className="w-full bg-amber-500 text-slate-900 py-4 rounded-xl font-black uppercase tracking-widest hover:bg-amber-400 mb-4">Valider & Offrir une Clé 🔑</button> : <p className="text-emerald-400 font-bold mb-4 bg-emerald-500/10 py-3 rounded-xl border border-emerald-500/20">Le coffre a été ouvert !</p>}
-                      <button onClick={handleDeleteVault} className="text-slate-500 text-xs font-bold uppercase tracking-widest hover:text-rose-500 transition">Supprimer ce coffre</button>
-                    </div>
-                  ) : (
-                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-[2rem] text-center">
-                      <span className="bg-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase px-3 py-1 rounded-full border border-indigo-500/30 mb-4 inline-block">Coffre de {partnerData?.pseudo || 'Partenaire'}</span>
-                      {vaultData.keysObtained < vaultData.keysRequired ? (
-                        <>
-                          <h3 className="text-xl font-bold text-white mb-4">Un secret est verrouillé ici...</h3>
-                          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 my-4">
-                            <span className="text-[10px] font-black text-amber-500 uppercase block mb-1">Condition pour obtenir une clé :</span>
-                            <span className="text-sm text-white font-bold">{vaultData.condition}</span>
-                          </div>
-                          <div className="my-6 flex justify-center gap-2">{[...Array(vaultData.keysRequired)].map((_, i) => <Key key={i} size={32} className={i < vaultData.keysObtained ? "text-amber-500" : "text-slate-700"} />)}</div>
-                          <p className="text-slate-400 text-sm">Il vous manque <strong className="text-amber-500">{vaultData.keysRequired - vaultData.keysObtained} clé(s)</strong>.</p>
-                        </>
-                      ) : (
-                        <div className="animate-in fade-in zoom-in duration-500">
-                          <h3 className="text-xl font-bold text-amber-500 mb-6 uppercase tracking-widest text-[12px]">Secret Déverrouillé !</h3>
-                          {vaultData.type === 'photo' && vaultData.imageUrl ? (
-                            <div className="w-full rounded-2xl overflow-hidden border-2 border-amber-500/50 relative">
-                               <img src={vaultData.imageUrl} alt="Reward" className="w-full h-auto" />
-                            </div>
-                          ) : (
-                            <div className="bg-slate-950 p-6 rounded-2xl border border-amber-500/30"><p className="text-white font-bold leading-relaxed text-lg whitespace-pre-line">{vaultData.secret}</p></div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
+            <div className="flex-1 p-6 space-y-4 overflow-y-auto custom-scroll pb-24">
+              <h3 className="font-black text-white text-lg mb-4">Programme du module</h3>
+              {selectedModule.chapters.map((chap, idx) => (
+                <div key={idx} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center gap-4 hover:bg-slate-800 transition-colors cursor-pointer group">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border-2 transition-colors ${chap.completed ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' : 'bg-slate-950 border-slate-700 text-slate-500 group-hover:border-amber-500 group-hover:text-amber-500'}`}>
+                    {chap.completed ? <CheckCircle2 size={18} /> : <Play size={14} className="ml-0.5" />}
+                  </div>
+                  <div className="flex-1">
+                    <h4 className={`font-bold text-sm transition-colors ${chap.completed ? 'text-slate-400' : 'text-white group-hover:text-amber-400'}`}>{chap.title}</h4>
+                    <span className="text-[10px] text-slate-500 flex items-center gap-1 mt-1"><Clock size={10}/> {chap.duration}</span>
+                  </div>
                 </div>
-              )}
+              ))}
+            </div>
+          </div>
+        )}
 
-              {/* AUTRES JEUX (Truth, Dice, Photo, etc.) */}
-              {activeGame === 'blurPhoto' && (
-                <div className="w-full max-w-md">
-                  <Camera size={64} className="text-cyan-500 mx-auto mb-6" />
-                  <h2 className="text-3xl font-black text-white mb-6">Photo Mystère</h2>
-                  {!userData?.partnerUid ? (
-                    <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-[2rem] text-center"><p className="text-slate-400 mb-8">Vous devez être en Duo pour envoyer une photo mystère.</p></div>
-                  ) : !blurGameData ? (
-                    <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-[2rem] text-center flex flex-col items-center">
-                      <p className="text-slate-400 text-sm mb-6">Envoyez une photo éphémère qui se dévoilera très lentement sur le téléphone de votre partenaire.</p>
-                      <input type="file" accept="image/*" id="blur-upload" className="hidden" onChange={(e) => {
-                        const file = e.target.files[0];
-                        if (file) { setBlurFile(file); const reader = new FileReader(); reader.onloadend = () => setBlurPreview(reader.result); reader.readAsDataURL(file); }
-                      }} />
-                      {blurPreview ? (
-                        <div className="mb-6 relative w-48 h-48 rounded-2xl overflow-hidden border border-slate-700"><img src={blurPreview} alt="Preview" className="w-full h-full object-cover" /><button onClick={() => {setBlurFile(null); setBlurPreview(null);}} className="absolute top-2 right-2 bg-slate-900 p-1.5 rounded-full text-rose-500"><X size={16}/></button></div>
-                      ) : (
-                        <label htmlFor="blur-upload" className="cursor-pointer bg-slate-800 border-2 border-dashed border-slate-700 w-full py-8 rounded-2xl flex flex-col items-center justify-center gap-2 text-slate-400 hover:text-white transition mb-6"><Upload size={24} /> Choisir une photo</label>
-                      )}
-                      <div className="flex items-center justify-between w-full bg-slate-950 rounded-2xl p-4 mb-6 border border-slate-800">
-                        <span className="text-sm font-bold text-slate-300 flex items-center gap-2"><Clock size={16} className="text-cyan-500"/> Durée du flou</span>
-                        <select value={blurDuration} onChange={(e) => setBlurDuration(Number(e.target.value))} className="bg-slate-800 text-white outline-none rounded-lg px-2 py-1 font-bold">
-                          <option value={30}>30 sec</option><option value={60}>1 min</option><option value={300}>5 min</option><option value={1800}>30 min</option>
-                        </select>
-                      </div>
-                      <button onClick={handleUploadBlurPhoto} disabled={!blurFile || uploadingBlur} className="w-full bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-800 disabled:text-slate-500 text-white py-4 rounded-xl font-black uppercase tracking-widest transition-colors shadow-lg shadow-cyan-900/20">{uploadingBlur ? "Envoi..." : "Envoyer la Photo"}</button>
-                    </div>
-                  ) : (
-                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-[2rem] text-center">
-                      {blurGameData.senderId === user.uid ? (
-                        <>
-                          <span className="bg-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase px-3 py-1 rounded-full border border-indigo-500/30 mb-4 inline-block">Photo envoyée</span>
-                          <h3 className="text-xl font-bold text-white mb-2">Patience...</h3>
-                          <p className="text-slate-400 text-sm mb-6">Votre partenaire est en train de voir la photo se dévoiler.</p>
-                          <button onClick={handleDeleteBlurPhoto} className="w-full bg-rose-600/20 border border-rose-500 text-rose-500 py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-rose-600 hover:text-white transition">Annuler & Supprimer</button>
-                        </>
-                      ) : (
-                        <>
-                          <span className="bg-cyan-500/20 text-cyan-400 text-[10px] font-black uppercase px-3 py-1 rounded-full border border-cyan-500/30 mb-4 inline-block">Surprise de {partnerData?.pseudo}</span>
-                          <div className="relative w-full aspect-square bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 mb-6 flex items-center justify-center">
-                            <img src={blurGameData.imageUrl} alt="Mystère" className="w-full h-full object-cover transition-all duration-1000" style={{ filter: `blur(${currentBlur}px)` }} />
-                            {currentBlur > 0 && <div className="absolute inset-0 bg-black/10 flex items-center justify-center"><ImageIcon className="text-white/30 w-1/3 h-1/3" /></div>}
-                          </div>
-                          <div className="bg-slate-950 border border-slate-800 px-4 py-3 rounded-xl flex items-center justify-center gap-3">
-                            <Clock size={18} className="text-cyan-500" />
-                            <span className="text-white font-mono font-bold text-lg">{timeLeft}</span>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  )}
+        {/* --- OUTILS --- */}
+        {activeTab === 'tools' && (
+          <div className="animate-in slide-in-from-bottom-4 fade-in duration-500 p-6 space-y-6">
+            <div>
+              <h1 className="text-3xl font-black text-white mb-1">La Boîte à Outils</h1>
+              <p className="text-slate-400 text-sm">Finies les erreurs de calcul.</p>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-[2rem] p-6 shadow-xl">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 bg-amber-500/10 rounded-xl text-amber-500"><Truck size={24} /></div>
+                <h2 className="text-lg font-black text-white leading-tight">Calculateur de<br/>Dalle Béton</h2>
+              </div>
+
+              <div className="space-y-4">
+                <div className="relative">
+                  <label className="text-[10px] font-black uppercase text-slate-500 block mb-2">Longueur (m)</label>
+                  <input type="number" value={calcLength} onChange={e => setCalcLength(e.target.value)} placeholder="0" className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-4 text-white text-lg font-bold outline-none focus:border-amber-500 transition shadow-inner" />
                 </div>
-              )}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="relative">
+                    <label className="text-[10px] font-black uppercase text-slate-500 block mb-2">Largeur (m)</label>
+                    <input type="number" value={calcWidth} onChange={e => setCalcWidth(e.target.value)} placeholder="0" className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-4 text-white text-lg font-bold outline-none focus:border-amber-500 transition shadow-inner" />
+                  </div>
+                  <div className="relative">
+                    <label className="text-[10px] font-black uppercase text-slate-500 block mb-2">Épaisseur (cm)</label>
+                    <input type="number" value={calcDepth} onChange={e => setCalcDepth(e.target.value)} placeholder="0" className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-4 text-white text-lg font-bold outline-none focus:border-amber-500 transition shadow-inner" />
+                  </div>
+                </div>
+              </div>
 
-              {activeGame === 'truthOrDare' && (
-                <div className="w-full max-w-md">
-                  <Zap size={64} className="text-rose-500 mx-auto mb-6" />
-                  <h2 className="text-3xl font-black text-white mb-8">Action ou Vérité</h2>
-                  {gameResult ? (
-                    <div className="bg-rose-900/20 border border-rose-500/30 p-8 rounded-[2rem] animate-in zoom-in duration-300 mb-8"><h3 className="text-xl font-bold text-white leading-relaxed">{gameResult}</h3></div>
-                  ) : <p className="text-slate-400 mb-8">Osez révéler vos secrets ou passez à l'action.</p>}
-                  <div className="flex gap-4">
-                    <button onClick={() => triggerGameResult('truth')} className="flex-1 bg-slate-800 py-4 rounded-2xl font-black text-indigo-400 hover:bg-slate-700">VÉRITÉ</button>
-                    <button onClick={() => triggerGameResult('dare')} className="flex-1 bg-rose-600 py-4 rounded-2xl font-black text-white shadow-lg shadow-rose-900/50 hover:bg-rose-500">ACTION</button>
+              {calculateConcrete && (
+                <div className="mt-8 animate-in zoom-in duration-500 slide-in-from-bottom-4">
+                  <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 text-center py-4 rounded-t-2xl font-black text-xl shadow-lg">
+                    {calculateConcrete.volume} m³ <span className="text-sm font-bold opacity-80 block">Volume Total</span>
+                  </div>
+                  <div className="bg-slate-800 rounded-b-2xl p-4 grid grid-cols-2 gap-4 border-x border-b border-slate-700 shadow-inner">
+                    <div className="text-center p-3 bg-slate-900/80 rounded-xl border border-slate-700/50">
+                      <span className="block text-2xl font-black text-white">{calculateConcrete.cimentSacs}</span>
+                      <span className="text-[9px] text-slate-400 uppercase font-bold">Sacs ciment (35kg)</span>
+                    </div>
+                    <div className="text-center p-3 bg-slate-900/80 rounded-xl border border-slate-700/50">
+                      <span className="block text-2xl font-black text-white">{calculateConcrete.sable}</span>
+                      <span className="text-[9px] text-slate-400 uppercase font-bold">Kg de sable</span>
+                    </div>
+                    <div className="text-center p-3 bg-slate-900/80 rounded-xl border border-slate-700/50">
+                      <span className="block text-2xl font-black text-white">{calculateConcrete.gravier}</span>
+                      <span className="text-[9px] text-slate-400 uppercase font-bold">Kg de gravier</span>
+                    </div>
+                    <div className="text-center p-3 bg-slate-900/80 rounded-xl border border-slate-700/50">
+                      <span className="block text-2xl font-black text-white">{calculateConcrete.eau}</span>
+                      <span className="text-[9px] text-slate-400 uppercase font-bold">Litres d'eau</span>
+                    </div>
                   </div>
                 </div>
               )}
-              {activeGame === 'loveDice' && (
-                <div className="w-full max-w-md">
-                  <Dices size={64} className="text-amber-500 mx-auto mb-6" />
-                  <h2 className="text-3xl font-black text-white mb-8">Dés de l'Amour</h2>
-                  {gameResult ? (
-                    <div className="bg-amber-900/20 border border-amber-500/30 p-8 rounded-[2rem] animate-in zoom-in duration-300 mb-8"><h3 className="text-xl font-bold text-white leading-relaxed whitespace-pre-line">{gameResult}</h3></div>
-                  ) : <p className="text-slate-400 mb-8">Laissez les dés choisir votre prochaine étape.</p>}
-                  <button onClick={() => triggerGameResult('dice')} className="w-full bg-amber-500 py-4 rounded-2xl font-black text-slate-900 shadow-lg shadow-amber-900/50 hover:bg-amber-400">LANCER LES DÉS</button>
-                </div>
-              )}
-              {activeGame === 'scenario' && (
-                <div className="w-full max-w-md">
-                  <Shuffle size={64} className="text-purple-500 mx-auto mb-6" />
-                  <h2 className="text-3xl font-black text-white mb-8">Scénario Aléatoire</h2>
-                  {gameResult ? (
-                    <div className="bg-purple-900/20 border border-purple-500/30 p-8 rounded-[2rem] animate-in zoom-in duration-300 mb-8"><h3 className="text-lg font-bold text-white leading-relaxed whitespace-pre-line text-left">{gameResult}</h3></div>
-                  ) : <p className="text-slate-400 mb-8">Prêts à jouer un rôle ce soir ?</p>}
-                  <button onClick={() => triggerGameResult('scenario')} className="w-full bg-purple-600 py-4 rounded-2xl font-black text-white shadow-lg shadow-purple-900/50 hover:bg-purple-500">GÉNÉRER UN SCÉNARIO</button>
-                </div>
-              )}
-              {activeGame === 'roulette' && (
-                <div className="w-full max-w-md">
-                  <Timer size={64} className="text-pink-500 mx-auto mb-6" />
-                  <h2 className="text-3xl font-black text-white mb-8">Préliminaires</h2>
-                  {gameResult ? (
-                    <div className="bg-pink-900/20 border border-pink-500/30 p-8 rounded-[2rem] animate-in zoom-in duration-300 mb-8"><h3 className="text-xl font-bold text-white leading-relaxed">{gameResult}</h3></div>
-                  ) : <p className="text-slate-400 mb-8">Faites monter la température lentement.</p>}
-                  <button onClick={() => triggerGameResult('roulette')} className="w-full bg-pink-600 py-4 rounded-2xl font-black text-white shadow-lg shadow-pink-900/50 hover:bg-pink-500">TOURNER LA ROULETTE</button>
-                </div>
-              )}
-              {activeGame === 'secretChallenge' && (
-                <div className="w-full max-w-md">
-                  <Gift size={64} className="text-emerald-500 mx-auto mb-6" />
-                  <h2 className="text-3xl font-black text-white mb-8">Défi Secret (24h)</h2>
-                  {gameResult ? (
-                    <div className="bg-emerald-900/20 border border-emerald-500/30 p-8 rounded-[2rem] animate-in zoom-in duration-300 mb-8">
-                      <h3 className="text-lg font-bold text-emerald-400 mb-4 uppercase text-[10px] tracking-widest">À réaliser d'ici demain</h3>
-                      <p className="text-xl font-bold text-white leading-relaxed">{gameResult}</p>
-                    </div>
-                  ) : <p className="text-slate-400 mb-8">Tirez un défi personnel à accomplir en cachette de votre partenaire pour le/la surprendre plus tard.</p>}
-                  <button onClick={() => triggerGameResult('secret')} className="w-full bg-emerald-600 py-4 rounded-2xl font-black text-white shadow-lg shadow-emerald-900/50 hover:bg-emerald-500">RÉVÉLER MON DÉFI</button>
-                </div>
-              )}
             </div>
           </div>
         )}
 
-        {/* MODAL IDÉES (BOÎTE À IDÉES) */}
-        {showIdeaModal && (
-          <div className="absolute inset-0 z-[200] bg-slate-950/95 backdrop-blur-xl flex flex-col animate-in slide-in-from-bottom duration-300">
-            <header className="px-6 flex items-center justify-between" style={{ paddingTop: 'max(env(safe-area-inset-top), 1.25rem)', paddingBottom: '1.25rem' }}>
-              <button onClick={() => setShowIdeaModal(false)} className="text-slate-400 bg-slate-900 p-2 rounded-full hover:text-white transition"><ArrowLeft size={20}/></button>
-              <h2 className="font-black text-white tracking-tight flex items-center gap-2"><Lightbulb className="text-amber-500" size={18}/> Boîte à idées</h2>
-              <div className="w-9"/>
-            </header>
-            <div className="flex-1 p-6 space-y-6 flex flex-col justify-center">
-              <div className="bg-amber-500/10 border border-amber-500/20 p-6 rounded-3xl text-center">
-                <Lightbulb size={48} className="text-amber-500 mx-auto mb-4" />
-                <h3 className="text-white font-bold mb-2">Une idée pour améliorer l'app ?</h3>
-                <p className="text-slate-400 text-sm">Le créateur lira votre suggestion avec attention. Une nouvelle position, un nouveau jeu, une fonctionnalité...</p>
-              </div>
-              <textarea value={ideaText} onChange={(e) => setIdeaText(e.target.value)} placeholder="Décrivez votre idée ici..." className="w-full h-40 bg-slate-900 border border-slate-800 text-white rounded-2xl p-5 outline-none focus:border-amber-500 transition-colors resize-none" />
-              <button onClick={handleSubmitIdea} disabled={!ideaText.trim()} className="w-full bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-900 py-4 rounded-xl font-black uppercase tracking-widest transition-colors shadow-lg shadow-amber-900/20">Envoyer au créateur</button>
-            </div>
-          </div>
-        )}
-
-        {/* MODAL PROFIL DU PARTENAIRE ET NOTE */}
-        {showPartnerProfile && (
-          <div className="absolute inset-0 z-[200] bg-slate-950/95 backdrop-blur-xl flex flex-col animate-in slide-in-from-bottom duration-300">
-            <header className="px-6 flex items-center justify-between" style={{ paddingTop: 'max(env(safe-area-inset-top), 1.25rem)', paddingBottom: '1.25rem' }}>
-              <button onClick={() => setShowPartnerProfile(false)} className="text-slate-400 bg-slate-900 p-2 rounded-full hover:text-white transition"><ArrowLeft size={20}/></button>
-              <h2 className="font-black text-white tracking-tight flex items-center gap-2"><Users className="text-emerald-500" size={18}/> Profil Duo</h2>
-              <div className="w-9"/>
-            </header>
-            <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center">
-              <div className="w-32 h-32 rounded-full border-4 border-slate-800 bg-slate-900 mb-6 overflow-hidden shadow-xl">
-                <img src={partnerData?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=partner&backgroundColor=1e293b`} alt="Partner" className="w-full h-full object-cover" />
-              </div>
-              <h2 className="text-3xl font-black text-white mb-2">{partnerData?.pseudo || 'Anonyme'}</h2>
-              <p className="text-slate-400 text-sm text-center max-w-xs mb-8">{partnerData?.bio || 'Explorateur de sensations...'}</p>
-              <div className="w-full bg-slate-900 border border-slate-800 rounded-3xl p-6">
-                <h3 className="text-sm font-black text-white mb-4 flex items-center gap-2"><Edit3 size={16} className="text-emerald-500"/> Note Secrète (Duo)</h3>
-                <p className="text-xs text-slate-500 mb-4">Ajoutez une note, un fantasme ou un petit mot sur votre partenaire. Vous seul pouvez modifier cette note.</p>
-                <textarea value={partnerNote} onChange={(e) => setPartnerNote(e.target.value)} placeholder="Écrivez quelque chose sur votre duo..." className="w-full h-32 bg-slate-950 border border-slate-800 text-white rounded-2xl p-4 outline-none focus:border-emerald-500 transition-colors resize-none mb-4" />
-                <button onClick={handleSavePartnerNote} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-4 rounded-xl font-black uppercase tracking-widest transition-colors shadow-lg shadow-emerald-900/20">Sauvegarder la note</button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* MODAL CHAT PRIVÉ (AMÉLIORÉ AVEC MODIF/SUPPRESSION) */}
-        {isChatOpen && (
-          <div className="absolute inset-0 z-[200] bg-slate-950 flex flex-col animate-in slide-in-from-right duration-300">
-            <header className="px-6 flex items-center justify-between border-b border-white/5 bg-slate-950/80 backdrop-blur-xl" style={{ paddingTop: 'max(env(safe-area-inset-top), 1.25rem)', paddingBottom: '1.25rem' }}>
-              <button onClick={() => {setIsChatOpen(false); setEditingMsgId(null);}} className="text-slate-400 bg-slate-900 p-2 rounded-full hover:text-white transition"><ArrowLeft size={20}/></button>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-700"><img src={partnerData?.avatarUrl} alt="Partner" className="w-full h-full object-cover"/></div>
-                <h2 className="font-black text-white">{partnerData?.pseudo}</h2>
-              </div>
-              <div className="w-9"/>
-            </header>
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scroll bg-slate-950 flex flex-col">
-              {messages.length === 0 ? (
-                <div className="text-center text-slate-500 text-sm my-auto opacity-50">Aucun message. Lancez la conversation...</div>
-              ) : (
-                messages.map(m => {
-                  const isMe = m.uid === user?.uid;
-                  return (
-                    <div key={m.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} mb-2`}>
-                      <div className={`max-w-[75%] rounded-2xl px-5 py-3 text-sm relative group ${isMe ? 'bg-rose-600 text-white rounded-br-none' : 'bg-slate-800 text-slate-200 rounded-bl-none'}`}>
-                        {m.text}
-                        {m.edited && <span className="text-[9px] opacity-60 ml-2 italic">modifié</span>}
-                      </div>
-                      
-                      {/* Boutons d'édition (Seulement pour mes messages) */}
-                      {isMe && (
-                        <div className="flex gap-3 mt-1 opacity-0 transition-opacity" style={{ opacity: 1, height: 'auto', paddingTop: '4px' }}>
-                          <button onClick={() => {setEditingMsgId(m.id); setEditMsgText(m.text);}} className="text-slate-500 hover:text-white text-xs flex items-center gap-1"><Edit2 size={10}/> Modifier</button>
-                          <button onClick={() => handleDeleteMessage(m.id)} className="text-slate-500 hover:text-rose-500 text-xs flex items-center gap-1"><Trash2 size={10}/> Supprimer</button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              )}
-              <div ref={chatEndRef} />
+        {/* --- GLOSSAIRE --- */}
+        {activeTab === 'glossary' && (
+          <div className="animate-in slide-in-from-bottom-4 fade-in duration-500 p-6 space-y-6 flex flex-col">
+            <div>
+              <h1 className="text-3xl font-black text-white mb-1">Le Glossaire</h1>
+              <p className="text-slate-400 text-sm">Le jargon du chantier, décrypté.</p>
             </div>
 
-            {/* Zone de saisie modifiée */}
-            {editingMsgId ? (
-              <div className="p-4 border-t border-slate-900 bg-slate-900" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-rose-500 font-bold uppercase tracking-widest"><Edit2 size={10} className="inline mr-1"/> Modification en cours</span>
-                  <button onClick={() => {setEditingMsgId(null); setEditMsgText('');}} className="text-slate-400 text-xs hover:text-white">Annuler</button>
+            <div className="relative group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-amber-500 transition-colors" size={20} />
+              <input 
+                type="text" 
+                placeholder="Chercher un terme..." 
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-800 rounded-2xl py-4 pl-12 pr-4 text-white outline-none focus:border-amber-500 transition shadow-lg" 
+              />
+            </div>
+
+            <div className="space-y-3 pb-8">
+              {GLOSSAIRE.filter(item => item.term.toLowerCase().includes(searchQuery.toLowerCase()) || item.def.toLowerCase().includes(searchQuery.toLowerCase())).map((item, idx) => (
+                <div key={idx} className="bg-slate-900 border border-slate-800 p-5 rounded-2xl hover:border-amber-500/30 transition-colors">
+                  <h3 className="font-black text-amber-500 mb-2 text-lg">{item.term}</h3>
+                  <p className="text-sm text-slate-300 leading-relaxed">{item.def}</p>
                 </div>
-                <div className="flex gap-2">
-                  <input type="text" value={editMsgText} onChange={(e) => setEditMsgText(e.target.value)} className="flex-1 bg-slate-950 border border-rose-500/50 rounded-full px-5 py-3 text-white outline-none focus:border-rose-500 transition" />
-                  <button onClick={handleSaveEditMessage} disabled={!editMsgText.trim()} className="w-12 h-12 bg-rose-600 text-white rounded-full flex items-center justify-center disabled:opacity-50">
-                    <Check size={18} />
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <form onSubmit={handleSendMessage} className="p-4 border-t border-slate-900 bg-slate-950" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}>
-                <div className="flex gap-2 relative">
-                  <input type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Message secret..." className="flex-1 bg-slate-900 border border-slate-800 rounded-full pl-5 pr-12 py-3 text-white outline-none focus:border-rose-500 transition" />
-                  <button type="submit" disabled={!newMessage.trim()} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-rose-600 text-white rounded-full flex items-center justify-center disabled:opacity-50 disabled:bg-slate-700">
-                    <Send size={14} className="-ml-0.5" />
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        )}
-
-        {/* MODAL CRÉATION / ÉDITION DE POSITION */}
-        {isCreating && (
-          <div className="absolute inset-0 z-[200] bg-slate-950/95 backdrop-blur-xl flex flex-col animate-in slide-in-from-bottom duration-300">
-            <header className="px-6 flex items-center justify-between" style={{ paddingTop: 'max(env(safe-area-inset-top), 1.25rem)', paddingBottom: '1.25rem' }}>
-              <button onClick={() => { setIsCreating(false); setEditPosId(null); }} className="text-slate-400 bg-slate-900 p-2 rounded-full hover:text-white transition"><ArrowLeft size={20}/></button>
-              <h2 className="font-black text-white">{editPosId ? 'Modifier' : 'Nouvelle Création'}</h2>
-              <div className="w-9"/>
-            </header>
-            <div className="flex-1 overflow-y-auto p-6 pb-32 custom-scroll space-y-6">
-              <div><label className="text-[10px] font-black text-slate-500 uppercase block mb-2">Nom de la position</label><input type="text" value={newPos.name} onChange={(e) => setNewPos({...newPos, name: e.target.value})} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500" placeholder="Ex: Le grand saut" /></div>
-              <div><label className="text-[10px] font-black text-slate-500 uppercase block mb-2">Catégorie</label><select value={newPos.cat} onChange={(e) => setNewPos({...newPos, cat: e.target.value})} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500">{CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.id}</option>)}<option value="NEW">+ Nouvelle catégorie</option></select></div>
-              {newPos.cat === 'NEW' && (<div><label className="text-[10px] font-black text-slate-500 uppercase block mb-2">Nom de la nouvelle catégorie</label><input type="text" value={newPos.newCat} onChange={(e) => setNewPos({...newPos, newCat: e.target.value})} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500" placeholder="Ex: Dans la voiture" /></div>)}
-              <div><label className="text-[10px] font-black text-slate-500 uppercase block mb-2">Description</label><textarea value={newPos.desc} onChange={(e) => setNewPos({...newPos, desc: e.target.value})} className="w-full h-24 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500 resize-none" placeholder="Comment la réaliser..." /></div>
-              <div><label className="text-[10px] font-black text-slate-500 uppercase block mb-2">Variante (Optionnel)</label><textarea value={newPos.v} onChange={(e) => setNewPos({...newPos, v: e.target.value})} className="w-full h-16 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500 resize-none" placeholder="Pour pimenter encore plus..." /></div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 text-center">
-                  <div className="text-[10px] font-black text-slate-500 uppercase mb-2">Piment (1-5)</div>
-                  <input type="range" min="1" max="5" value={newPos.spice} onChange={(e) => setNewPos({...newPos, spice: parseInt(e.target.value)})} className="w-full accent-rose-500" />
-                  <div className="flex justify-center gap-1 mt-2">{[...Array(5)].map((_, i) => <Flame key={i} size={14} className={i < newPos.spice ? 'text-rose-500' : 'text-slate-700'} fill={i < newPos.spice ? 'currentColor' : 'none'} />)}</div>
-                </div>
-                <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 text-center">
-                  <div className="text-[10px] font-black text-slate-500 uppercase mb-2">Physique (1-5)</div>
-                  <input type="range" min="1" max="5" value={newPos.diff} onChange={(e) => setNewPos({...newPos, diff: parseInt(e.target.value)})} className="w-full accent-amber-500" />
-                  <div className="flex justify-center gap-1 mt-2">{[...Array(5)].map((_, i) => <Activity key={i} size={14} className={i < newPos.diff ? 'text-amber-500' : 'text-slate-700'} />)}</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 p-4 rounded-xl cursor-pointer" onClick={() => setNewPos({...newPos, shared: !newPos.shared})}>
-                <div className={`w-10 h-6 rounded-full transition-colors relative ${newPos.shared ? 'bg-emerald-500' : 'bg-slate-700'}`}>
-                  <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${newPos.shared ? 'translate-x-5' : 'translate-x-1'}`}></div>
-                </div>
-                <div className="flex-1"><div className="text-sm font-bold text-white">Partager en Duo</div><div className="text-xs text-slate-500">Votre partenaire verra cette position</div></div>
-              </div>
-              <button onClick={handleSavePosition} className="w-full bg-emerald-600 text-white py-4 rounded-xl font-black uppercase tracking-widest hover:bg-emerald-500 transition mt-4">{editPosId ? 'Enregistrer' : 'Créer'}</button>
+              ))}
             </div>
           </div>
         )}
+      </main>
 
-        {/* MODAL ÉDITION PROFIL */}
-        {isEditingProfile && (
-          <div className="absolute inset-0 z-[200] bg-slate-950/95 backdrop-blur-xl flex flex-col animate-in slide-in-from-bottom duration-300">
-            <header className="px-6 flex items-center justify-between" style={{ paddingTop: 'max(env(safe-area-inset-top), 1.25rem)', paddingBottom: '1.25rem' }}>
-              <button onClick={() => setIsEditingProfile(false)} className="text-slate-400 bg-slate-900 p-2 rounded-full hover:text-white transition"><ArrowLeft size={20}/></button>
-              <h2 className="font-black text-white">Éditer Profil</h2>
-              <div className="w-9"/>
-            </header>
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              <div className="flex flex-col items-center">
-                <div className="w-24 h-24 rounded-full border-4 border-slate-800 bg-slate-900 mb-4 overflow-hidden"><img src={profileForm.avatarUrl} alt="Avatar" className="w-full h-full object-cover" /></div>
-                <button onClick={generateNewAvatar} className="flex items-center gap-2 text-xs font-bold text-indigo-400 bg-indigo-500/10 px-4 py-2 rounded-full border border-indigo-500/20 hover:bg-indigo-500/20"><RefreshCw size={14}/> Avatar Aléatoire</button>
-              </div>
-              <div><label className="text-[10px] font-black text-slate-500 uppercase block mb-2">Pseudo</label><input type="text" value={profileForm.pseudo} onChange={(e) => setProfileForm({...profileForm, pseudo: e.target.value})} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500" /></div>
-              <div><label className="text-[10px] font-black text-slate-500 uppercase block mb-2">Bio</label><textarea value={profileForm.bio} onChange={(e) => setProfileForm({...profileForm, bio: e.target.value})} className="w-full h-24 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500 resize-none" /></div>
-              <button onClick={handleSaveProfile} className="w-full bg-indigo-600 text-white py-4 rounded-xl font-black uppercase tracking-widest hover:bg-indigo-500 transition mt-4">Sauvegarder</button>
-            </div>
-          </div>
-        )}
-
-        {/* MODAL INSTALLATION PWA */}
-        {showInstallTutorial && (
-          <div className="absolute inset-0 z-[200] bg-slate-950/95 backdrop-blur-xl flex flex-col items-center justify-center p-6 text-center animate-in zoom-in duration-300">
-            <Smartphone size={64} className="text-indigo-500 mb-6" />
-            <h2 className="text-2xl font-black text-white mb-4">Installer l'App</h2>
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl text-left space-y-4 mb-8 w-full max-w-sm">
-              <p className="text-sm text-slate-300"><strong>Sur iOS (Safari) :</strong><br/>1. Touchez l'icône Partager (carré avec flèche).<br/>2. Faites défiler et touchez "Sur l'écran d'accueil".</p>
-              <div className="w-full h-px bg-slate-800"></div>
-              <p className="text-sm text-slate-300"><strong>Sur Android (Chrome) :</strong><br/>1. Touchez les 3 points en haut à droite.<br/>2. Touchez "Ajouter à l'écran d'accueil".</p>
-            </div>
-            <button onClick={() => setShowInstallTutorial(false)} className="bg-slate-800 text-white px-8 py-4 rounded-xl font-black">Fermer</button>
-          </div>
-        )}
-
-        {/* POPUP ADMIN */}
-        {adminPopupMessage && (
-          <div className="absolute inset-0 z-[300] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in">
-            <div className="bg-slate-900 border border-slate-700 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-rose-500 to-amber-500"></div>
-              <AlertTriangle className="mx-auto text-rose-500 mb-4" size={48} />
-              <h2 className="text-xl font-black text-white mb-2 uppercase tracking-widest">Message de l'Admin</h2>
-              <p className="text-slate-300 mb-8 leading-relaxed">{adminPopupMessage}</p>
-              <button onClick={() => setAdminPopupMessage(null)} className="w-full bg-slate-800 hover:bg-slate-700 text-white py-4 rounded-xl font-black uppercase transition-colors border border-slate-700">J'ai compris</button>
-            </div>
-          </div>
-        )}
-
-      </div>
+      {/* NAV BOTTOM */}
+      <nav className="absolute bottom-0 w-full bg-slate-950/90 backdrop-blur-2xl border-t border-slate-800/50 flex justify-around items-center pt-4 pb-6 px-2 z-40">
+        {[
+          { id: 'home', icon: <HardHat size={24} strokeWidth={activeTab === 'home' ? 2.5 : 2} />, label: 'Accueil' },
+          { id: 'courses', icon: <BookOpen size={24} strokeWidth={activeTab === 'courses' ? 2.5 : 2} />, label: 'Cours' },
+          { id: 'tools', icon: <Calculator size={24} strokeWidth={activeTab === 'tools' ? 2.5 : 2} />, label: 'Outils' },
+          { id: 'glossary', icon: <Search size={24} strokeWidth={activeTab === 'glossary' ? 2.5 : 2} />, label: 'Jargon' }
+        ].map(item => (
+          <button 
+            key={item.id}
+            onClick={() => {setActiveTab(item.id); setSelectedModule(null);}} 
+            className={`flex flex-col items-center gap-1.5 w-1/4 transition-all duration-300 ${activeTab === item.id ? 'text-amber-500 scale-110' : 'text-slate-500 hover:text-slate-300'}`}
+          >
+            {item.icon}
+            <span className="text-[9px] font-black uppercase tracking-wider">{item.label}</span>
+          </button>
+        ))}
+      </nav>
     </div>
   );
 }
