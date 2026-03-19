@@ -4,7 +4,7 @@ import {
   Hammer, HardHat, Calculator, BookOpen, User, 
   ArrowLeft, Search, CheckCircle2, Play, Trophy, 
   Droplets, Flame, Truck, Layers, Clock, Box, Grid,
-  Shield, Map, PaintRoller, Ruler, Medal, Pencil,
+  Shield, Map, Paintbrush, Ruler, Medal, Pencil,
   ChevronRight, Camera, AlertTriangle
 } from 'lucide-react';
 
@@ -94,7 +94,7 @@ const MODULES = [
     ]
   },
   {
-    id: 'm9', title: 'Enduits de Façade', icon: <PaintRoller size={24} />, color: 'from-amber-200 to-amber-500',
+    id: 'm9', title: 'Enduits de Façade', icon: <Paintbrush size={24} />, color: 'from-amber-200 to-amber-500',
     level: 'Expert', duration: '4h', progress: 0,
     chapters: [
       { title: 'Préparer les supports et poser les baguettes', duration: '1h', completed: false },
