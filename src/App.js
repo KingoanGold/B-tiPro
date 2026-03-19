@@ -3,189 +3,173 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Hammer, HardHat, Calculator, BookOpen, User, 
   ArrowLeft, CheckCircle2, Play, Trophy, 
-  Droplets, Flame, Truck, Layers, Clock, Box, Grid,
+  Droplets, Truck, Layers, Clock, Box, Grid,
   Shield, Map, Paintbrush, Ruler, Medal, Pencil,
-  X, Check
+  X, Check, Wrench, Pickaxe, DoorOpen
 } from 'lucide-react';
 
 // ==========================================
-// BÂTIPRO : ENCYCLOPÉDIE DE LA MAÇONNERIE
+// BÂTIPRO V6 : L'ENCYCLOPÉDIE ULTIME (50 LEÇONS)
 // ==========================================
 
 const MODULES = [
   {
-    id: 'm1', title: 'Initiation & Sécurité (Normes)', icon: <Shield size={24} />, color: 'from-amber-500 to-orange-600',
-    level: 'Débutant', duration: '2h30',
-    chapters: [
-      { 
-        id: 'm1c1', title: 'Les EPI et les normes de sécurité', duration: '20 min', 
-        content: "La sécurité n'est pas une option. Le milieu de la maçonnerie est particulièrement hostile.\n\n1. Le Casque (Norme EN 397) : Obligatoire dès qu'il y a un risque de chute de gravats ou d'utilisation d'engins.\n2. Chaussures de Sécurité (Norme S3) : Coque de protection (résiste à 200 joules), semelle anti-perforation (clous) et résistance à l'eau.\n3. Gants (Norme EN 388) : Le ciment frais a un pH de 12 à 13 (très basique). Sans gants enduits en nitrile, il provoque des brûlures chimiques et des dermatites dites 'gale du ciment'.\n4. Masque respiratoire (FFP2/FFP3) : Indispensable lors de la découpe de béton à la meuleuse. La poussière de silice est extrêmement nocive et provoque la silicose (maladie pulmonaire irréversible)." 
-      },
-      { 
-        id: 'm1c2', title: 'Ergonomie : Préserver son dos', duration: '15 min', 
-        content: "Un maçon manipule plusieurs tonnes par jour.\n\n• Levage : Ne courbez JAMAIS le dos pour ramasser un sac de 35 kg. Écartez les jambes, pliez les genoux, gardez le dos droit et poussez sur vos cuisses.\n• Port de charge : Gardez le poids collé à votre buste. Plus la charge est éloignée de votre corps, plus la pression sur les disques lombaires est décuplée par effet de levier.\n• La Torsion : Ne pivotez jamais seulement le buste lorsque vous portez une charge. Déplacez vos pieds pour tourner. La torsion chargée est la cause n°1 des hernies discales." 
-      },
-      { 
-        id: 'm1c3', title: 'Le catalogue de l\'outillage à main', duration: '40 min', 
-        content: "L'outillage doit être robuste et nettoyé à l'eau immédiatement après usage :\n\n• La Truelle : Ronde (pour gâcher), carrée, ou 'langue de chat' (très fine, pour les joints).\n• La Taloche : Plaque en plastique ou bois. Sert à stocker du mortier dans une main pendant qu'on l'applique de l'autre, ou à lisser ('talocher') un enduit.\n• Le Niveau tubulaire et Fil à plomb : Le niveau (1m idéalement) vérifie l'horizontalité. Pour un mur de plus de 2m de haut, le fil à plomb reste le maître absolu de la verticalité.\n• Règle en Aluminium (1.5m à 3m) : Pour aligner les parpaings ou 'tirer' le béton d'une dalle.\n• La Massette et la Broche (burin) : Pour les petits ajustements ou ébavurer." 
-      },
-    ]
-  },
-  {
-    id: 'm2', title: 'Lecture de Plans & Implantation', icon: <Map size={24} />, color: 'from-blue-500 to-blue-700',
+    id: 'm1', title: 'Sécurité & Préparation', icon: <Shield size={24} />, color: 'from-amber-500 to-orange-600',
     level: 'Débutant', duration: '3h',
     chapters: [
-      { 
-        id: 'm2c1', title: 'Les Chaises d\'Implantation', duration: '45 min', 
-        content: "C'est l'étape qui transfère le plan sur le terrain.\n\nLes 'chaises' sont deux piquets de bois plantés fermement, reliés par une planche horizontale parfaitement de niveau. On les place à l'extérieur de la zone à terrasser (recul de 1.5m) pour éviter qu'elles soient arrachées par la pelle mécanique.\n\nSur ces planches, on plante un clou. En reliant un clou d'une chaise à la chaise opposée avec un cordeau (ficelle fluo très résistante), on matérialise l'axe exact de nos futurs murs. L'intersection des cordeaux donne l'angle de la construction." 
-      },
-      { 
-        id: 'm2c2', title: 'Nivellement : Tuyau d\'eau et Laser', duration: '30 min', 
-        content: "Comment s'assurer que deux points distants de 20 mètres sont exactement à la même hauteur ?\n\n• Le niveau à eau (méthode traditionnelle) : Un long tuyau transparent rempli d'eau. Selon le principe des vases communicants, le niveau de l'eau sera toujours rigoureusement identique aux deux extrémités du tuyau, peu importe le terrain au milieu.\n• Le niveau Laser rotatif : Posé sur un trépied au centre du terrain, il projette une ligne rouge ou verte parfaitement horizontale à 360°. On utilise un récepteur fixé sur une mire (grande règle graduée) pour relever les hauteurs dans les fouilles." 
-      },
-      { 
-        id: 'm2c3', title: 'L\'Équerrage (Théorème de Pythagore)', duration: '30 min', 
-        content: "Sur de grandes longueurs, une équerre de maçon est trop imprécise. On utilise la méthode du 3-4-5 (a² + b² = c²).\n\n1. À l'intersection de vos cordeaux, mesurez exactement 3 mètres sur le cordeau A et faites une marque.\n2. Mesurez 4 mètres sur le cordeau B et marquez-le.\n3. Mesurez la diagonale entre ces deux marques.\n4. Si la diagonale mesure EXACTEMENT 5 mètres, votre angle est à 90°. Sinon, décalez doucement un cordeau sur sa chaise jusqu'à obtenir 5 mètres." 
-      }
+      { id: 'm1c1', title: 'Les EPI (Équipements de Protection)', duration: '20 min', content: "Obligatoires sur chantier : Casque (EN 397) contre les chutes d'objets. Chaussures S3 (coque + anti-perforation). Gants nitrile (le ciment brûle la peau, pH 13). Masque FFP3 contre la poussière de silice (découpe de parpaings). Lunettes de protection." },
+      { id: 'm1c2', title: 'Ergonomie et port de charges', duration: '15 min', content: "Le maçon soulève des tonnes. Ne courbez jamais le dos. Pliez les genoux, gardez le dos droit et utilisez les muscles des cuisses. Portez les sacs (35kg) collés au buste. Ne pivotez pas le tronc, déplacez vos pieds." },
+      { id: 'm1c3', title: 'Balisage et sécurisation du chantier', duration: '15 min', content: "Un chantier doit être clos. Utilisez des barrières Heras ou de la rubalise de chantier. Signalez les tranchées ouvertes pour éviter les chutes. Prévoyez une zone de stockage propre et un accès pompier dégagé." },
+      { id: 'm1c4', title: 'Installation de chantier', duration: '20 min', content: "Définir l'emplacement de la bétonnière (proche du sable, du gravier et d'un point d'eau). Prévoir l'évacuation des eaux de lavage (bac de décantation). Installer le coffret électrique de chantier étanche." },
+      { id: 'm1c5', title: 'Gestion des déchets (Gravats)', duration: '10 min', content: "Triez à la source. Les gravats inertes (béton, brique, tuile) peuvent être recyclés en sous-couche (remblai). Les plastiques (polyane, sacs) et produits chimiques (adjuvants) vont en déchetterie spécialisée." }
     ]
   },
   {
-    id: 'm3', title: 'Les Fondations (DTU 13.1)', icon: <Layers size={24} />, color: 'from-stone-500 to-stone-700',
-    level: 'Intermédiaire', duration: '4h',
+    id: 'm2', title: 'L\'Outillage du Maçon', icon: <Wrench size={24} />, color: 'from-slate-500 to-slate-700',
+    level: 'Débutant', duration: '2h',
     chapters: [
-      { 
-        id: 'm3c1', title: 'Fouilles et profondeur Hors-Gel', duration: '40 min', 
-        content: "Une maison solide commence dans la terre. Vous devez creuser jusqu'à atteindre le 'bon sol' (la couche d'assise porteuse).\n\nLa profondeur hors-gel : Les semelles doivent reposer sous cette ligne virtuelle. Si l'eau gèle sous la fondation, elle gonfle (augmentation de volume de 9%), soulève la maison et crée des fissures structurelles. \nLa profondeur dépend de la région : 50 cm en climat doux océanique, 80 cm dans l'Est, et plus de 1m en montagne." 
-      },
-      { 
-        id: 'm3c2', title: 'Béton de propreté et Enrobage', duration: '30 min', 
-        content: "Ne posez JAMAIS l'acier directement sur la terre !\n\n1. Béton de propreté : Au fond de la fouille, coulez 4 cm d'un béton faiblement dosé (150kg/m³). Il crée une surface de travail plane et propre.\n2. L'Enrobage : L'acier de vos semelles filantes doit être totalement enrobé de béton (min 3 à 5 cm tout autour) pour le protéger de la corrosion. Utilisez des cales en plastique pour surélever les armatures sur le béton de propreté." 
-      },
-      { 
-        id: 'm3c3', title: 'Recouvrement et liaisons d\'angle', duration: '45 min', 
-        content: "Les armatures (semelles de 6m de long) doivent être reliées entre elles.\n\n• Le recouvrement : Les fers doivent se superposer sur une longueur égale à 50 fois leur diamètre (Ex: pour un fer de Ø10mm, le recouvrement est de 50cm). Attachez-les avec du fil de fer recuit et une tenaille.\n• Les angles : On ne croise pas simplement les semelles dans les angles. On utilise des équerres de liaison (fers tordus à 90°) pour assurer la continuité mécanique de la fondation." 
-      }
+      { id: 'm2c1', title: 'Les outils à main (Truelles, Taloches)', duration: '20 min', content: "La truelle ronde sert à gâcher, la truelle carrée à dresser. La taloche (bois/plastique) porte le mortier. Le gratton sert à finir les enduits. Nettoyez-les à l'eau immédiatement après usage, le ciment sec pardonne peu." },
+      { id: 'm2c2', title: 'Les outils de mesure et contrôle', duration: '25 min', content: "Le mètre ruban (décamètre). Le niveau tubulaire (1m minimum). Le fil à plomb pour la verticalité absolue. La règle en aluminium (2 à 3m) pour vérifier la planéité. L'équerre de maçon pour les angles." },
+      { id: 'm2c3', title: 'L\'électroportatif de base', duration: '30 min', content: "La meuleuse d'angle (disque diamant) pour couper blocs et aciers. Le perforateur-burineur pour percer le béton. Le malaxeur électrique pour les colles et enduits. Toujours débrancher avant de changer d'accessoire." },
+      { id: 'm2c4', title: 'La Bétonnière (Utilisation/Entretien)', duration: '20 min', content: "Ordre de chargement : 1/2 Eau -> Gravier (nettoie la cuve) -> Ciment -> Sable -> Reste de l'eau. Ne jamais taper sur la cuve au marteau pour la vider ! Nettoyez à grande eau avec quelques graviers à la fin de la journée." }
     ]
   },
   {
-    id: 'm4', title: 'Liants : Mortiers & Bétons', icon: <Droplets size={24} />, color: 'from-slate-400 to-slate-600',
+    id: 'm3', title: 'Topographie & Implantation', icon: <Map size={24} />, color: 'from-blue-500 to-blue-800',
     level: 'Intermédiaire', duration: '3h',
     chapters: [
-      { 
-        id: 'm4c1', title: 'La différence fondamentale', duration: '20 min', 
-        content: "Ne confondez plus jamais ces deux liants.\n\nLE MORTIER : Ciment (ou chaux) + Sable + Eau.\nC'est la 'colle'. Il sert à jointer les parpaings, sceller des appuis, faire une chape ou un enduit.\n\nLE BÉTON : Ciment + Sable + GRAVIERS + Eau.\nC'est la 'structure'. Le gravier forme le squelette qui encaisse la compression (le poids). Il sert pour les fondations, dalles, poteaux et linteaux." 
-      },
-      { 
-        id: 'm4c2', title: 'La règle des dosages (Cimenterie)', duration: '45 min', 
-        content: "Dosage standard Béton (350 kg/m³) :\nÀ la pelle (règle du 1-2-3) : 1 volume de ciment, 2 de sable, 3 de graviers, 1/2 d'eau.\nÀ la bétonnière (pour 1 sac de 35kg) : 35kg ciment + 50L sable + 70L graviers + 17L eau.\n\nDosage Mortier de montage (300 kg/m³) :\nPour 1 sac de 35kg de ciment : 100 à 120L de sable (soit 10 à 12 seaux de maçon) + 17L d'eau.\n\nATTENTION : Trop d'eau ruine la résistance du béton et crée de la laitance. L'eau ne doit représenter que la moitié du poids du ciment." 
-      },
-      { 
-        id: 'm4c3', title: 'La Chaux et le Mortier Bâtard', duration: '30 min', 
-        content: "Pour la rénovation de vieux murs en pierre, le ciment gris (Portland) est à proscrire : il est trop rigide et bloque l'humidité, faisant pourrir la pierre.\n\nOn utilise la Chaux (NHL 3.5 ou NHL 5). Elle est souple, respirante, et fongicide.\nLe 'Mortier Bâtard' est un mélange : 50% Ciment + 50% Chaux + Sable + Eau. Il combine la résistance rapide du ciment et la souplesse de la chaux. Parfait pour sceller des tuiles ou crépir un muret." 
-      }
+      { id: 'm3c1', title: 'Lecture de plans et Échelles', duration: '30 min', content: "Plan de masse, plan de coupe, élévation. L'échelle 1/50 signifie que 2 cm sur le plan valent 1 mètre en réalité. Attention aux cotes : en maçonnerie, on parle souvent en centimètres (ex: 250 = 2,50m) ou en mètres." },
+      { id: 'm3c2', title: 'Les chaises d\'implantation', duration: '40 min', content: "Piquets plantés à 1,5m à l'extérieur des futures fouilles, reliés par des planches de niveau. On y plante des clous pour tendre des cordeaux matérialisant les axes des murs. Le terrassement se fait sans toucher les chaises." },
+      { id: 'm3c3', title: 'L\'Équerrage (Règle du 3-4-5)', duration: '30 min', content: "Théorème de Pythagore pour un angle droit parfait : Mesurez 3m sur un cordeau, 4m sur l'autre. La diagonale doit faire exactement 5m. Ajustez les cordeaux sur les chaises jusqu'à obtenir cette mesure." },
+      { id: 'm3c4', title: 'Le niveau : Tuyau d\'eau et Laser', duration: '20 min', content: "Le niveau à eau utilise le principe des vases communicants pour reporter une hauteur sur un terrain accidenté. Le niveau laser rotatif est aujourd'hui la norme : il projette un plan horizontal capté par une cellule sur une mire." }
     ]
   },
   {
-    id: 'm5', title: 'Élévation : Murs en Parpaings', icon: <Box size={24} />, color: 'from-orange-600 to-red-700',
+    id: 'm4', title: 'Terrassement & Fondations', icon: <Pickaxe size={24} />, color: 'from-stone-600 to-stone-900',
+    level: 'Intermédiaire', duration: '4h',
+    chapters: [
+      { id: 'm4c1', title: 'Nature des sols et Étude G2', duration: '30 min', content: "On ne construit pas sur de la terre végétale ou de l'argile gonflante. L'étude de sol (G2) définit la profondeur du 'bon sol' (le refus). Un sol sableux draine bien, un sol argileux retient l'eau et nécessite des fondations spécifiques." },
+      { id: 'm4c2', title: 'Profondeur Hors-Gel', duration: '20 min', content: "Les semelles de fondation doivent être sous la ligne hors-gel. Si l'eau gèle sous la maison, elle soulève le bâtiment. Minimum 50cm (littoral) à plus de 1m (montagne). Respectez la carte des gels locale." },
+      { id: 'm4c3', title: 'Le Béton de propreté', duration: '15 min', content: "Couche de 4 à 5 cm de béton maigre (150kg/m³) coulée au fond de la fouille. Elle empêche l'acier de la fondation d'être en contact avec la terre (ce qui le ferait rouiller)." },
+      { id: 'm4c4', title: 'Ferraillage des semelles filantes', duration: '45 min', content: "Posez les armatures sur des cales en plastique (enrobage minimum 3 à 5 cm de béton partout). Les fers doivent se recouvrir sur une longueur de 50x leur diamètre (ex: 50cm pour un fer de 10mm). Renforcez les angles avec des équerres." },
+      { id: 'm4c5', title: 'Coulage et Vibration des fondations', duration: '30 min', content: "Béton dosé à 350kg/m³. Coulez depuis la toupie. Utilisez une aiguille vibrante pour chasser l'air. Ne vibrez pas trop au même endroit (risque de ségrégation : les cailloux tombent, l'eau et le ciment remontent)." }
+    ]
+  },
+  {
+    id: 'm5', title: 'Les Liants (Mortiers & Bétons)', icon: <Droplets size={24} />, color: 'from-cyan-700 to-cyan-900',
+    level: 'Intermédiaire', duration: '3h',
+    chapters: [
+      { id: 'm5c1', title: 'Ciment, Chaux et Plâtre', duration: '30 min', content: "Le Ciment Portland (gris) est dur et étanche. La Chaux (NHL) est souple, laisse respirer les vieux murs en pierre. Le Plâtre est réservé à l'intérieur pour des scellements rapides (prise en quelques minutes)." },
+      { id: 'm5c2', title: 'Dosage du Mortier', duration: '20 min', content: "Mortier = Ciment + Sable + Eau. Il sert à coller (parpaings, briques, enduits). Dosage standard : 1 volume de ciment pour 3 à 4 volumes de sable. Trop d'eau = retrait au séchage et fissures." },
+      { id: 'm5c3', title: 'Dosage du Béton', duration: '20 min', content: "Béton = Ciment + Sable + GRAVIERS + Eau. C'est le squelette structurel. Dosage standard (règle 1-2-3) : 1 vol. ciment, 2 vol. sable, 3 vol. graviers, 1/2 vol. d'eau. Les graviers donnent la résistance à la compression." },
+      { id: 'm5c4', title: 'Adjuvants et conditions climatiques', duration: '20 min', content: "Plastifiant : rend le béton fluide avec moins d'eau. Hydrofuge de masse : rend le mortier étanche (arases, piscines). Antigel : abaisse la température de gel de l'eau. Ne maçonne jamais sous 5°C ni au-dessus de 35°C sans précautions." },
+      { id: 'm5c5', title: 'Le Mortier Bâtard', duration: '15 min', content: "Mélange 50% Ciment / 50% Chaux. Il combine la résistance rapide du ciment et la plasticité de la chaux. Excellent pour les enduits extérieurs traditionnels ou pour sceller des tuiles faîtières." }
+    ]
+  },
+  {
+    id: 'm6', title: 'Élévation : Murs en Parpaings', icon: <Box size={24} />, color: 'from-orange-600 to-red-700',
     level: 'Avancé', duration: '5h',
     chapters: [
-      { 
-        id: 'm5c1', title: 'La Coupure de capillarité (Arase)', duration: '45 min', 
-        content: "L'humidité du sol remonte dans les murs (capillarité), détruisant les plâtres intérieurs. Pour bloquer cela, le DTU impose une coupure sous le premier rang habitable.\n\nSoit on déroule une bande bitumeuse (feutre), soit on réalise une 'arase étanche' : une couche de mortier de 2cm d'épaisseur, fortement dosée (400kg/m³) et additionnée d'hydrofuge de masse (adjuvant liquide qui bouche les pores du ciment)." 
-      },
-      { 
-        id: 'm5c2', title: 'Le rang de départ', duration: '1h', 
-        content: "Si le 1er rang est de travers, tout le mur le sera.\n1. Étalez un lit de mortier épais.\n2. Posez vos blocs d'angle (blocs creux pour recevoir les fers verticaux) aux extrémités du mur.\n3. Réglez-les au millimètre (fil à plomb et grand niveau).\n4. Tendez un cordeau bien tendu entre les arêtes supérieures de ces deux blocs. Ne touchez jamais le cordeau en posant les blocs intermédiaires (laissez 1mm d'écart)." 
-      },
-      { 
-        id: 'm5c3', title: 'Croisement et joints', duration: '1h30', 
-        content: "Règle d'or : Les joints verticaux ne doivent jamais être superposés (coup de sabre). On croise les blocs d'un demi-parpaing ou d'un tiers au minimum pour répartir les charges.\n\nPose : Déposez deux boudins de mortier sur les bords extérieurs du parpaing inférieur. Graissez les 'oreilles' du nouveau bloc. Positionnez, tapotez avec le manche de la truelle pour régler l'aplomb.\nFinition : Une fois le mortier un peu 'tiré' (durci), passez un fer à joint (ou un morceau de tuyau d'arrosage) pour serrer et lisser les joints." 
-      }
+      { id: 'm6c1', title: 'L\'Arase étanche (Coupure capillaire)', duration: '30 min', content: "Obligatoire (DTU). L'humidité remonte dans les murs. Sous le 1er rang habitable, coulez 2cm de mortier fortement hydrofugé, ou déroulez une bande d'arase bitumeuse." },
+      { id: 'm6c2', title: 'Le rang de départ (Le plus important)', duration: '45 min', content: "Posez les blocs d'angle sur un lit de mortier épais. Réglez-les au millimètre (horizontalité et aplomb). Tendez un cordeau entre eux. Alignez tous les blocs intermédiaires sur ce cordeau (laissez 1mm de jour)." },
+      { id: 'm6c3', title: 'Croisement et joints (Coup de sabre)', duration: '30 min', content: "Les joints verticaux ne doivent JAMAIS s'aligner d'un rang à l'autre (coup de sabre = fissure). Croisez les blocs d'un tiers ou d'un demi. Lissez les joints au fer une fois le mortier 'tiré' (légèrement dur)." },
+      { id: 'm6c4', title: 'Blocs d\'angle et Chaînages verticaux', duration: '30 min', content: "Aux angles du bâtiment et autour des portes/fenêtres, utilisez des parpaings d'angle (percés). Glissez-y des fers à béton reliés aux fondations. On les remplira de béton liquide à la fin pour créer des poteaux armés invisibles." },
+      { id: 'm6c5', title: 'Les coupes de parpaings', duration: '20 min', content: "Utilisez une meuleuse avec disque diamant segmenté (toujours avec EPI et masque !). Pour des coupes propres, tracez le bloc, entaillez les 4 faces à la meuleuse, puis donnez un coup sec avec la massette au centre." }
     ]
   },
   {
-    id: 'm6', title: 'Dalles & Planchers (Hérisson)', icon: <Layers size={24} />, color: 'from-cyan-600 to-cyan-800',
+    id: 'm7', title: 'Élévation : Briques et Béton Cellulaire', icon: <Grid size={24} />, color: 'from-red-500 to-red-800',
+    level: 'Avancé', duration: '3h',
+    chapters: [
+      { id: 'm7c1', title: 'La Brique Alvéolaire (Généralités)', duration: '20 min', content: "Excellente isolation thermique (Gelimac, Monomur). Plus fragile que le parpaing. Nécessite une coupe précise à la scie sabre (lame carbure) ou à la grande meule à eau." },
+      { id: 'm7c2', title: 'Le montage à Joint Mince', duration: '45 min', content: "Fini la truelle ! Les briques rectifiées se collent avec un mortier-colle spécifique appliqué au rouleau applicateur (environ 2mm d'épaisseur). Le 1er rang doit être ABSOLUMENT parfait sur une arase de mortier classique." },
+      { id: 'm7c3', title: 'Le Béton Cellulaire (Siporex)', duration: '30 min', content: "Léger, isolant, se coupe à la scie égoïne spéciale. Se monte aussi à la colle (joint mince). Attention, il pompe l'eau très vite : la colle doit être appliquée rapidement et proprement avec une truelle peigne." },
+      { id: 'm7c4', title: 'Traitement des ponts thermiques', duration: '20 min', content: "Dans ces maçonneries isolantes, on utilise des planelles isolées en bord de dalle, et des blocs spéciaux pour les linteaux et chaînages, afin d'éviter que le froid ne rentre par le béton armé." }
+    ]
+  },
+  {
+    id: 'm8', title: 'Béton Armé & Coffrage', icon: <Ruler size={24} />, color: 'from-zinc-500 to-zinc-800',
+    level: 'Expert', duration: '4h',
+    chapters: [
+      { id: 'm8c1', title: 'Principes du ferraillage', duration: '30 min', content: "Le béton craint la traction. L'acier l'encaisse. Les armatures sont composées de fers filants (longitudinaux) et de cadres/épingles (transversaux) qui empêchent le béton d'éclater sous la pression (effort tranchant)." },
+      { id: 'm8c2', title: 'Coffrage bois : Les bases', duration: '40 min', content: "Le béton frais est un liquide très lourd (2,4 tonnes/m³). Votre coffrage en planches de pin (voliges ou bastaings) doit être ultra-résistant. Utilisez des serre-joints, des étais et des cales. Appliquez de l'huile de décoffrage sur le bois." },
+      { id: 'm8c3', title: 'Réaliser un Poteau', duration: '30 min', content: "Attachez votre chaînage vertical (généralement 4 fers torsadés carrés) aux fers en attente. Fermez le coffrage sur 3 côtés, puis le 4ème. Coulez doucement, vibrez avec l'aiguille par couches de 50cm pour éviter la ségrégation." },
+      { id: 'm8c4', title: 'Décoffrage et ragréage des nids de poule', duration: '20 min', content: "Attendez minimum 48h. Décoffrez doucement sans faire levier sur les arêtes. Si vous voyez des trous (nids de graviers = manque de vibration), il faut les reboucher avec un mortier de réparation fibré spécifique." }
+    ]
+  },
+  {
+    id: 'm9', title: 'Dalles, Chapes & Planchers', icon: <Layers size={24} />, color: 'from-indigo-600 to-indigo-900',
     level: 'Avancé', duration: '4h',
     chapters: [
-      { 
-        id: 'm6c1', title: 'Hérisson et Film Polyane', duration: '1h', 
-        content: "Pour une dalle sur terre-plein (rez-de-chaussée) :\n1. Le Hérisson : Couche de 15 à 20 cm de cailloux (calibre 40/80) compactés à la plaque vibrante. Il sert à drainer l'eau sous la dalle et créer une assise solide. (On n'utilise jamais de terre ou de gravats contenant du plâtre).\n2. Le Polyane : Film plastique épais déroulé sur le hérisson, remontant sur les bords des murs. Il bloque définitivement les remontées d'humidité." 
-      },
-      { 
-        id: 'm6c2', title: 'Treillis soudé et Joints de dilatation', duration: '1h', 
-        content: "Le treillis soudé (ST25 C en général pour une dalle de maison) est le ferraillage de la dalle. Il doit être posé sur des cales pour être noyé au milieu de l'épaisseur du béton (souvent 12 cm au total).\n\nLe béton se dilate avec la chaleur et se rétracte au séchage. Pour éviter des fissures anarchiques, on place des joints de fractionnement (profilés en PVC) tous les 15 à 20 m², ou on scie la dalle sur 1/3 de son épaisseur le lendemain du coulage." 
-      },
-      { 
-        id: 'm6c3', title: 'Tirer la dalle à la règle', duration: '1h30', 
-        content: "Commencez par couler le béton au fond de la pièce pour reculer vers la sortie.\nLe geste du tirage : Utilisez une grande règle en aluminium posée sur des guides préalablement mis de niveau (tubes en acier ou joints PVC). Faites des mouvements de va-et-vient latéraux (comme une scie) en tirant la règle vers vous. Le mouvement latéral fait remonter la laitance et lisse la surface, tandis que le mouvement arrière égalise la hauteur." 
-      }
+      { id: 'm9c1', title: 'Le Hérisson (Sous-couche)', duration: '20 min', content: "Dalle sur terre-plein. Décaissez, étalez 15cm de cailloux compactés (calibre 40/80) pour drainer. N'utilisez pas de terre végétale. Recouvrez d'un film polyane (plastique) pour bloquer l'humidité (superposez les bords de 20cm)." },
+      { id: 'm9c2', title: 'Treillis soudé et Joints de fractionnement', duration: '30 min', content: "Placez le treillis (ex: ST25C) sur des cales (3cm). Le béton travaille et fissure. Placez des joints profilés en plastique (règles jointes) tous les 15m² pour diriger ces fissures de manière invisible." },
+      { id: 'm9c3', title: 'Tirer une dalle (Le geste)', duration: '40 min', content: "Béton étalé un peu plus haut que le niveau. Posez une règle en aluminium sur vos guides. Effectuez un mouvement de 'scie' gauche-droite tout en reculant. Ce mouvement latéral fait remonter la laitance et lisse la surface." },
+      { id: 'm9c4', title: 'La Chape maigre du carreleur', duration: '30 min', content: "La dalle est grossière, la chape est lisse. C'est un mortier sous-dosé en eau (aspect terre humide) dosé à 250kg de ciment/m³. On la dresse à la règle sur la dalle pour y coller ou y sceller le carrelage de finition." }
+    ]
+  },
+  {
+    id: 'm10', title: 'Les Ouvertures (Linteaux, Appuis)', icon: <DoorOpen size={24} />, color: 'from-purple-600 to-purple-800',
+    level: 'Avancé', duration: '3h',
+    chapters: [
+      { id: 'm10c1', title: 'Le Linteau en blocs U', duration: '30 min', content: "La poutre au-dessus de la fenêtre. On utilise des blocs en 'U' posés sur une planche étayée. On y place une armature spécifique (chaînage triangulaire ou fers tordus) reposant sur les murs porteurs, puis on coule le béton." },
+      { id: 'm10c2', title: 'L\'Appui de fenêtre', duration: '30 min', content: "Souvent préfabriqué en béton. Il doit être posé de niveau. Il comporte un 'rejingot' (rebord arrière pour bloquer l'eau sous la fenêtre) et une 'goutte d\'eau' (rainure sous l'appui pour que l'eau tombe sans couler sur la façade)." },
+      { id: 'm10c3', title: 'Le Seuil de porte', duration: '20 min', content: "Similaire à l'appui de fenêtre, mais pour les baies vitrées ou portes. Il doit affleurer parfaitement avec le niveau du carrelage fini intérieur (cote 'Sol Fini' sur les plans)." }
+    ]
+  },
+  {
+    id: 'm11', title: 'Enduits de Façade', icon: <Paintbrush size={24} />, color: 'from-amber-200 to-amber-500',
+    level: 'Expert', duration: '4h',
+    chapters: [
+      { id: 'm11c1', title: 'Préparation et Baguettes d\'angle', duration: '20 min', content: "Le mur doit être propre, brossé et dépoussiéré. Scellez des profilés métalliques ou plastiques (baguettes d'angle) sur les arêtes des murs au mortier. Elles serviront de guide d'épaisseur et renforceront les angles." },
+      { id: 'm11c2', title: 'Le Gobetis (L\'accroche)', duration: '30 min', content: "1ère couche. Mortier très riche en ciment et liquide. On le projette violemment (à la truelle ou à la machine) pour qu'il pénètre les pores du parpaing. Laissez rugueux. Il garantit que les couches suivantes ne tomberont pas." },
+      { id: 'm11c3', title: 'Le Corps d\'enduit (Dressage)', duration: '40 min', content: "2ème couche (24h plus tard). Mortier normal hydrofugé (1,5cm d'épaisseur). Appliquez généreusement puis dressez avec une règle en aluminium en vous appuyant sur des repères ou vos baguettes d'angle." },
+      { id: 'm11c4', title: 'Les Finitions (Taloché, Gratté, Éponge)', duration: '30 min', content: "Dernière couche fine, souvent teintée (Mortier monocouche). On peut la lisser à la taloche bois/éponge, ou la gratter avec une planche à clous (gratton) juste avant le séchage complet pour un aspect rustique (façades modernes)." }
+    ]
+  },
+  {
+    id: 'm12', title: 'Maçonnerie Paysagère', icon: <Hammer size={24} />, color: 'from-green-600 to-emerald-800',
+    level: 'Intermédiaire', duration: '3h',
+    chapters: [
+      { id: 'm12c1', title: 'Muret en Pierre Sèche', duration: '30 min', content: "Sans mortier ! Triez les pierres. Les plus larges forment la base. Inclinez très légèrement les faces extérieures vers le centre du mur (fruit). Croisez les joints. Remplissez le milieu avec du cailloutis de calage." },
+      { id: 'm12c2', title: 'Le Pavage sur lit de sable', duration: '20 min', content: "Décaissez, posez un géotextile (bloque les mauvaises herbes et la terre). Étalez 3 à 5 cm de sable grossier. Dressez à la règle. Posez les pavés en tapotant au maillet caoutchouc. Jointoyez avec du sable fin polymère." },
+      { id: 'm12c3', title: 'Création d\'escaliers extérieurs', duration: '30 min', content: "Calcul de Blondel : 2x Hauteur de marche + 1 Giron (profondeur) = 60 à 64 cm. Coffrez les contremarches avec des planches solides. Ferraillez et coulez en commençant par le bas." }
     ]
   }
 ];
 
 const GLOSSAIRE = [
-  { term: 'Adjuvant', def: 'Produit ajouté au béton ou mortier pour modifier ses propriétés (antigel, hydrofuge, plastifiant).' },
-  { term: 'Agglo', def: 'Abréviation d\'aggloméré, l\'autre nom commun du parpaing de ciment.' },
-  { term: 'Arase', def: 'Couche de mortier parfaitement de niveau sur laquelle on monte le premier rang d\'un mur.' },
-  { term: 'Banche', def: 'Grand panneau de coffrage (souvent métallique) utilisé pour couler des murs entiers en béton armé.' },
-  { term: 'Barbotine', def: 'Mélange très liquide de ciment et d\'eau servant de colle de liaison (souvent utilisé pour le carrelage ou la reprise de béton).' },
-  { term: 'Chaînage', def: 'Armature en acier noyée dans le béton (horizontale ou verticale) pour lier, ceinturer et solidifier les murs.' },
-  { term: 'Cordeau', def: 'Ficelle colorée tendue entre deux piquets ou blocs servant de guide d\'alignement rectiligne.' },
-  { term: 'Coup de sabre', def: 'Défaut grave de maçonnerie où les joints verticaux de deux rangs de parpaings sont superposés, créant une ligne de fragilité.' },
-  { term: 'Cure du béton', def: 'Action de protéger le béton frais contre une évaporation trop rapide de son eau (bâchage ou arrosage en plein été).' },
-  { term: 'Décaissement', def: 'Action de creuser et retirer la couche de terre végétale pour atteindre le bon sol.' },
-  { term: 'Enrobage', def: 'Épaisseur de béton recouvrant les armatures en acier pour les protéger de la corrosion (minimum 3cm).' },
-  { term: 'Équerrage', def: 'Action de vérifier ou tracer un angle à exactement 90 degrés (règle du 3-4-5).' },
-  { term: 'Ferraillage', def: 'Mise en place des armatures métalliques destinées à armer le béton et lui donner sa résistance à la traction.' },
-  { term: 'Gâchage', def: 'Action de mélanger le liant (ciment/chaux), les agrégats (sable/gravier) et l\'eau pour obtenir le mortier/béton.' },
-  { term: 'Gobetis', def: 'Première couche d\'un enduit, projetée très liquide, servant de couche d\'accroche rugueuse pour le corps d\'enduit.' },
-  { term: 'Hérisson', def: 'Couche de pierres et graviers damés, exempte de terre, constituant la couche drainante sous une dalle.' },
-  { term: 'Hydrofuge', def: 'Produit (liquide ou poudre) qui rend un mortier ou un béton imperméable à l\'eau.' },
-  { term: 'Linteau', def: 'Poutre horizontale en béton armé, bois ou acier, située au-dessus d\'une ouverture (porte, fenêtre) soutenant la maçonnerie supérieure.' },
-  { term: 'Laitance', def: 'Couche blanchâtre et friable qui remonte à la surface d\'un béton trop riche en eau.' },
-  { term: 'Parpaing', def: 'Bloc de maçonnerie manufacturé en béton, creux ou plein. Standard : 50x20x20cm.' },
-  { term: 'Plumb (Aplomb)', def: 'Ce qui est parfaitement vertical (vérifié au fil à plomb ou au niveau).' },
-  { term: 'Polyane', def: 'Film plastique épais étanche placé sous le béton d\'une dalle pour bloquer les remontées capillaires d\'humidité.' },
-  { term: 'Ragréage', def: 'Application d\'un enduit très fin et auto-lissant sur une dalle pour rattraper les défauts de planéité avant pose d\'un revêtement.' },
-  { term: 'Refus (Bon sol)', def: 'Couche géologique profonde et dure sur laquelle les fondations peuvent reposer sans risque d\'affaissement.' },
-  { term: 'Semelle', def: 'Base de la fondation (souvent filante sous les murs), armée de ferraillage, qui répartit le poids du bâtiment sur le sol.' },
-  { term: 'Taloche', def: 'Outil de maçon, plaque munie d\'une poignée, servant à porter le mortier ou à réaliser la finition d\'un enduit.' },
-  { term: 'Tirage', def: 'Action de niveler et lisser le béton frais d\'une dalle en reculant avec une règle en aluminium.' },
-  { term: 'Treillis soudé', def: 'Grillage d\'armatures en acier croisées et soudées, utilisé pour ferrailler les dalles et planchers.' },
-  { term: 'Truelle', def: 'L\'outil symbolique du maçon. Lame d\'acier servant à prendre, jeter, étaler et couper le mortier.' },
-  { term: 'Vibration', def: 'Action d\'utiliser une aiguille vibrante plongée dans le béton frais pour en expulser l\'air et le compacter.' }
+  { term: 'Adjuvant', def: 'Produit chimique (liquide/poudre) modifiant les propriétés du béton (antigel, retardateur).' },
+  { term: 'Agglo', def: 'Diminutif d\'aggloméré, l\'autre nom du parpaing de ciment.' },
+  { term: 'Arase', def: 'Couche de mortier parfaitement horizontale rattrapant les niveaux ou créant une barrière étanche.' },
+  { term: 'Banche', def: 'Coffrage lourd (métal ou bois) pour couler des murs entiers en béton armé.' },
+  { term: 'Barbotine', def: 'Lait de ciment pur (très liquide) servant de couche de liaison entre vieux et nouveau béton.' },
+  { term: 'Chaînage', def: 'Armatures en acier ceinturant le bâtiment (horizontales dans les dalles, verticales dans les angles).' },
+  { term: 'Coup de sabre', def: 'Défaut grave : alignement vertical des joints de parpaings sur plusieurs rangs (fissure assurée).' },
+  { term: 'Cure (du béton)', def: 'Protection du béton frais contre l\'évaporation rapide de l\'eau (soleil, vent) pour éviter les fissures.' },
+  { term: 'DTU', def: 'Document Technique Unifié. C\'est le livre des normes de la construction française. Obligatoire pour les assurances.' },
+  { term: 'Enrobage', def: 'Épaisseur de béton (min. 3cm) qui doit entourer l\'acier pour le protéger de la rouille.' },
+  { term: 'Étude de sol (G2)', def: 'Sondage géologique déterminant la profondeur et la nature des fondations nécessaires.' },
+  { term: 'Fruit (d\'un mur)', def: 'Légère inclinaison donnée à la face d\'un mur de soutènement pour augmenter sa stabilité.' },
+  { term: 'Hérisson', def: 'Lit de pierres drainantes (sans terre) servant de base solide sous une dalle.' },
+  { term: 'Laitance', def: 'Couche friable de poussière blanche remontant à la surface d\'un béton trop riche en eau.' },
+  { term: 'Linteau', def: 'Poutre horizontale supportant la maçonnerie au-dessus d\'une porte ou fenêtre.' },
+  { term: 'Mire', def: 'Règle graduée verticale utilisée avec un niveau laser pour relever des altitudes.' },
+  { term: 'Polyane', def: 'Film plastique isolant bloquant les remontées capillaires sous les dalles.' },
+  { term: 'Rejingot', def: 'Bord relevé à l\'arrière d\'un appui de fenêtre pour bloquer l\'infiltration de l\'eau.' },
+  { term: 'Ségrégation', def: 'Défaut du béton : les graviers tombent au fond, le ciment et l\'eau remontent en surface (souvent dû à une vibration excessive).' }
 ];
 
 const BADGES = [
   { id: 'bd1', name: 'Le Casque', desc: 'Profil créé', icon: <HardHat size={24}/> },
-  { id: 'bd2', name: 'Sécurisé', desc: 'Module 1 fini', icon: <Shield size={24}/> },
-  { id: 'bd3', name: 'Chef de Chantier', desc: '5 leçons lues', icon: <BookOpen size={24}/> },
-  { id: 'bd4', name: 'L\'Artisan', desc: 'Plus de 10 leçons', icon: <Trophy size={24}/> },
+  { id: 'bd2', name: 'Le Compagnon', desc: '10 leçons lues', icon: <BookOpen size={24}/> },
+  { id: 'bd3', name: 'Le Chef', desc: '25 leçons terminées', icon: <Shield size={24}/> },
+  { id: 'bd4', name: 'Maître Artisan', desc: '100% complété', icon: <Trophy size={24}/> },
 ];
 
 const LoadingScreen = () => (
   <div className="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center z-[999] overflow-hidden">
-    <style>{`
-      @keyframes dropHeavy {
-        0% { transform: translateY(-300px); opacity: 0; }
-        60% { transform: translateY(10px); opacity: 1; }
-        80% { transform: translateY(-5px); opacity: 1; }
-        100% { transform: translateY(0); opacity: 1; }
-      }
-      .b-1 { animation: dropHeavy 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards; opacity: 0; animation-delay: 0.1s; }
-      .b-2 { animation: dropHeavy 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards; opacity: 0; animation-delay: 0.4s; }
-      .b-3 { animation: dropHeavy 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards; opacity: 0; animation-delay: 0.7s; }
-      .b-4 { animation: dropHeavy 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards; opacity: 0; animation-delay: 1.0s; }
-      .b-5 { animation: dropHeavy 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards; opacity: 0; animation-delay: 1.3s; }
-    `}</style>
-    <div className="relative w-48 h-40 mb-8">
-      <div className="b-1 absolute bottom-0 left-0 w-14 h-8 bg-stone-400 border-[3px] border-stone-600 shadow-lg flex items-center justify-center"><div className="w-8 h-3 border-2 border-stone-500 rounded-sm"></div></div>
-      <div className="b-2 absolute bottom-0 left-[60px] w-14 h-8 bg-stone-400 border-[3px] border-stone-600 shadow-lg flex items-center justify-center"><div className="w-8 h-3 border-2 border-stone-500 rounded-sm"></div></div>
-      <div className="b-3 absolute bottom-0 left-[120px] w-14 h-8 bg-stone-400 border-[3px] border-stone-600 shadow-lg flex items-center justify-center"><div className="w-8 h-3 border-2 border-stone-500 rounded-sm"></div></div>
-      <div className="b-4 absolute bottom-[32px] left-[30px] w-14 h-8 bg-stone-400 border-[3px] border-stone-600 shadow-lg flex items-center justify-center"><div className="w-8 h-3 border-2 border-stone-500 rounded-sm"></div></div>
-      <div className="b-5 absolute bottom-[32px] left-[90px] w-14 h-8 bg-stone-400 border-[3px] border-stone-600 shadow-lg flex items-center justify-center"><div className="w-8 h-3 border-2 border-stone-500 rounded-sm"></div></div>
-    </div>
-    <h2 className="text-amber-500 font-black text-xl tracking-widest uppercase animate-pulse">Coulage des fondations...</h2>
+    <div className="w-16 h-16 border-4 border-slate-800 border-t-amber-500 rounded-full animate-spin mb-6"></div>
+    <h2 className="text-amber-500 font-black text-xl tracking-widest uppercase animate-pulse">Coulage des 50 leçons...</h2>
   </div>
 );
 
@@ -214,10 +198,10 @@ export default function App() {
   // Glossaire State
   const [searchQuery, setSearchQuery] = useState('');
 
-  // 1. Initialisation
+  // 1. Initialisation (Faux chargement + LocalStorage)
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 2000); // 2 secondes de faux chargement pour voir l'animation
-    const saved = localStorage.getItem('batipro_v5_profile');
+    const timer = setTimeout(() => setIsLoading(false), 2000); 
+    const saved = localStorage.getItem('batipro_v6_profile');
     if (saved) {
       setUserProfile(JSON.parse(saved));
       setIsNewUser(false);
@@ -236,7 +220,7 @@ export default function App() {
       completedLessons: userProfile.completedLessons || []
     };
     setUserProfile(newProfile);
-    localStorage.setItem('batipro_v5_profile', JSON.stringify(newProfile));
+    localStorage.setItem('batipro_v6_profile', JSON.stringify(newProfile));
     setIsNewUser(false);
   };
 
@@ -246,28 +230,33 @@ export default function App() {
       const updatedLessons = [...userProfile.completedLessons, lessonId];
       const updatedProfile = { ...userProfile, completedLessons: updatedLessons };
       setUserProfile(updatedProfile);
-      localStorage.setItem('batipro_v5_profile', JSON.stringify(updatedProfile));
+      localStorage.setItem('batipro_v6_profile', JSON.stringify(updatedProfile));
     }
     setActiveLesson(null);
   };
 
   // 4. Calcul de progression dynamique
   const getModuleProgress = (mod) => {
-    if(!userProfile.completedLessons) return 0;
+    if(!userProfile.completedLessons || mod.chapters.length === 0) return 0;
     const total = mod.chapters.length;
     const finished = mod.chapters.filter(c => userProfile.completedLessons.includes(c.id)).length;
     return Math.round((finished / total) * 100);
   };
 
   const totalFinished = userProfile.completedLessons?.length || 0;
+  
+  // Calcul du nombre total de leçons dans l'appli (pour le badge 100%)
+  const totalLessonsInApp = useMemo(() => {
+    return MODULES.reduce((acc, mod) => acc + mod.chapters.length, 0);
+  }, []);
 
   // 5. Conditions dynamiques des Badges (Évaluées à la volée)
   const badgesWithStatus = BADGES.map(b => {
     let unlocked = false;
     if (b.id === 'bd1') unlocked = userProfile.name !== '';
-    if (b.id === 'bd2') unlocked = getModuleProgress(MODULES[0]) === 100;
-    if (b.id === 'bd3') unlocked = totalFinished >= 5;
-    if (b.id === 'bd4') unlocked = totalFinished >= 10;
+    if (b.id === 'bd2') unlocked = totalFinished >= 10;
+    if (b.id === 'bd3') unlocked = totalFinished >= 25;
+    if (b.id === 'bd4') unlocked = totalFinished >= totalLessonsInApp;
     return { ...b, unlocked };
   });
   
@@ -280,7 +269,7 @@ export default function App() {
     const vol = l * w * d;
     return { 
       vol: vol.toFixed(2), 
-      ciment: Math.ceil(vol * 10), // 350kg/m3 = 10 sacs de 35kg
+      ciment: Math.ceil(vol * 10), // 350kg/m3 = ~10 sacs de 35kg
       sable: Math.round(vol * 800), 
       gravier: Math.round(vol * 1000), 
       eau: Math.round(vol * 175) 
@@ -308,7 +297,7 @@ export default function App() {
       <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full">
         <HardHat className="text-amber-500 mx-auto mb-6" size={64} />
         <h1 className="text-3xl font-black text-center mb-2">Bienvenue sur Bâti<span className="text-amber-500">Pro</span></h1>
-        <p className="text-slate-400 text-center mb-10 text-sm">Crée ton profil pour commencer ta formation. (Progression sauvegardée sur cet appareil).</p>
+        <p className="text-slate-400 text-center mb-10 text-sm">Votre encyclopédie de la maçonnerie. ({totalLessonsInApp} leçons disponibles).</p>
         <div className="space-y-6">
           <div>
             <label className="text-[10px] font-black uppercase text-slate-500 block mb-2">Ton Prénom ou Surnom</label>
@@ -340,7 +329,7 @@ export default function App() {
             <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center text-slate-950 shadow-lg shadow-amber-500/20"><HardHat size={22}/></div>
             <div>
               <h1 className="text-xl font-black text-white leading-none">Bâti<span className="text-amber-500">Pro</span></h1>
-              <span className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">L'Encyclopédie</span>
+              <span className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">Édition Maître</span>
             </div>
           </div>
           <button onClick={() => setActiveTab('profile')} className="w-10 h-10 rounded-full border-2 border-slate-700 overflow-hidden"><img src={userProfile.avatar} alt="Avatar" className="w-full h-full object-cover"/></button>
@@ -361,12 +350,12 @@ export default function App() {
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl flex flex-col items-center text-center">
                 <CheckCircle2 className="text-amber-500 mb-2" size={28} />
-                <span className="text-2xl font-black text-white">{totalFinished}</span>
+                <span className="text-2xl font-black text-white">{totalFinished} <span className="text-sm text-slate-500">/ {totalLessonsInApp}</span></span>
                 <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Leçons finies</span>
               </div>
               <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl flex flex-col items-center text-center">
                 <Medal className="text-emerald-500 mb-2" size={28} />
-                <span className="text-2xl font-black text-white">{unlockedBadgesCount} / {BADGES.length}</span>
+                <span className="text-2xl font-black text-white">{unlockedBadgesCount} <span className="text-sm text-slate-500">/ {BADGES.length}</span></span>
                 <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Badges obtenus</span>
               </div>
             </div>
@@ -395,7 +384,7 @@ export default function App() {
           <div className="animate-in fade-in p-6 space-y-4">
             <div className="mb-6">
               <h1 className="text-3xl font-black text-white mb-1">L'Académie</h1>
-              <p className="text-slate-400 text-sm">Des fondations jusqu'aux finitions.</p>
+              <p className="text-slate-400 text-sm">{MODULES.length} modules, {totalLessonsInApp} leçons.</p>
             </div>
             {MODULES.map((mod) => {
               const progress = getModuleProgress(mod);
@@ -574,7 +563,7 @@ export default function App() {
           <div className="animate-in fade-in duration-500 p-6 space-y-6 flex flex-col min-h-full">
             <div>
               <h1 className="text-3xl font-black text-white mb-1">Le Dico du Chantier</h1>
-              <p className="text-slate-400 text-sm">30 termes essentiels à maîtriser.</p>
+              <p className="text-slate-400 text-sm">Lexique essentiel à maîtriser.</p>
             </div>
 
             <div className="relative group">
@@ -626,7 +615,7 @@ export default function App() {
             
             <button onClick={() => {
                 if(window.confirm("Êtes-vous sûr de vouloir effacer toute votre progression ?")) {
-                  localStorage.removeItem('batipro_v5_profile');
+                  localStorage.removeItem('batipro_v6_profile');
                   window.location.reload();
                 }
               }} 
@@ -661,4 +650,3 @@ export default function App() {
     </div>
   );
 }
-
