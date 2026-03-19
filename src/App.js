@@ -2,112 +2,205 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Hammer, HardHat, Calculator, BookOpen, User, 
-  ArrowLeft, Search, CheckCircle2, Play, Trophy, 
+  ArrowLeft, CheckCircle2, Play, Trophy, 
   Droplets, Flame, Truck, Layers, Clock, Box, Grid,
   Shield, Map, Paintbrush, Ruler, Medal, Pencil,
-  ChevronRight, AlertTriangle, X, Check
+  X, Check
 } from 'lucide-react';
 
-// --- DONNÉES : MODULES ET VRAIES LEÇONS ---
+// ==========================================
+// BÂTIPRO : ENCYCLOPÉDIE DE LA MAÇONNERIE
+// ==========================================
+
 const MODULES = [
   {
-    id: 'm1', title: 'Initiation & Sécurité', icon: <Shield size={24} />, color: 'from-amber-500 to-orange-600',
-    level: 'Débutant', duration: '2h',
+    id: 'm1', title: 'Initiation & Sécurité (Normes)', icon: <Shield size={24} />, color: 'from-amber-500 to-orange-600',
+    level: 'Débutant', duration: '2h30',
     chapters: [
-      { id: 'm1c1', title: 'Équipement de Protection Individuelle (EPI)', duration: '15 min', content: "La sécurité avant tout. Sur un chantier de maçonnerie, vous devez obligatoirement porter :\n\n- Un casque de chantier (contre les chutes de gravats).\n- Des chaussures de sécurité (coquées, norme S3) pour protéger vos orteils et éviter les clous.\n- Des gants de maçonnerie (le ciment brûle la peau à cause de son pH très basique).\n- Des lunettes de protection, indispensables lors des découpes à la meuleuse ou lors du gâchage." },
-      { id: 'm1c2', title: 'Gestes et postures de sécurité', duration: '20 min', content: "Un maçon soulève des tonnes de matériaux par jour. Pour préserver votre dos :\n\n- Pliez toujours les genoux pour ramasser une charge.\n- Gardez le dos droit et utilisez la force de vos cuisses.\n- Portez les charges lourdes (sacs de ciment de 35kg) près de votre corps.\n- Ne faites jamais de torsion du buste lorsque vous portez une charge ; pivotez avec vos pieds." },
-      { id: 'm1c3', title: 'Les outils à main indispensables', duration: '40 min', content: "La caisse à outils du maçon : \n\n1. La truelle : pour prendre, jeter et lisser le mortier. \n2. La taloche : pour transporter de petites quantités de mortier ou lisser un enduit. \n3. Le niveau à bulle et le fil à plomb : vos meilleurs amis pour des murs droits. \n4. La massette et le burin : pour les petits ajustements et les démolitions." },
+      { 
+        id: 'm1c1', title: 'Les EPI et les normes de sécurité', duration: '20 min', 
+        content: "La sécurité n'est pas une option. Le milieu de la maçonnerie est particulièrement hostile.\n\n1. Le Casque (Norme EN 397) : Obligatoire dès qu'il y a un risque de chute de gravats ou d'utilisation d'engins.\n2. Chaussures de Sécurité (Norme S3) : Coque de protection (résiste à 200 joules), semelle anti-perforation (clous) et résistance à l'eau.\n3. Gants (Norme EN 388) : Le ciment frais a un pH de 12 à 13 (très basique). Sans gants enduits en nitrile, il provoque des brûlures chimiques et des dermatites dites 'gale du ciment'.\n4. Masque respiratoire (FFP2/FFP3) : Indispensable lors de la découpe de béton à la meuleuse. La poussière de silice est extrêmement nocive et provoque la silicose (maladie pulmonaire irréversible)." 
+      },
+      { 
+        id: 'm1c2', title: 'Ergonomie : Préserver son dos', duration: '15 min', 
+        content: "Un maçon manipule plusieurs tonnes par jour.\n\n• Levage : Ne courbez JAMAIS le dos pour ramasser un sac de 35 kg. Écartez les jambes, pliez les genoux, gardez le dos droit et poussez sur vos cuisses.\n• Port de charge : Gardez le poids collé à votre buste. Plus la charge est éloignée de votre corps, plus la pression sur les disques lombaires est décuplée par effet de levier.\n• La Torsion : Ne pivotez jamais seulement le buste lorsque vous portez une charge. Déplacez vos pieds pour tourner. La torsion chargée est la cause n°1 des hernies discales." 
+      },
+      { 
+        id: 'm1c3', title: 'Le catalogue de l\'outillage à main', duration: '40 min', 
+        content: "L'outillage doit être robuste et nettoyé à l'eau immédiatement après usage :\n\n• La Truelle : Ronde (pour gâcher), carrée, ou 'langue de chat' (très fine, pour les joints).\n• La Taloche : Plaque en plastique ou bois. Sert à stocker du mortier dans une main pendant qu'on l'applique de l'autre, ou à lisser ('talocher') un enduit.\n• Le Niveau tubulaire et Fil à plomb : Le niveau (1m idéalement) vérifie l'horizontalité. Pour un mur de plus de 2m de haut, le fil à plomb reste le maître absolu de la verticalité.\n• Règle en Aluminium (1.5m à 3m) : Pour aligner les parpaings ou 'tirer' le béton d'une dalle.\n• La Massette et la Broche (burin) : Pour les petits ajustements ou ébavurer." 
+      },
     ]
   },
   {
     id: 'm2', title: 'Lecture de Plans & Implantation', icon: <Map size={24} />, color: 'from-blue-500 to-blue-700',
     level: 'Débutant', duration: '3h',
     chapters: [
-      { id: 'm2c1', title: 'Comprendre l\'échelle et les cotes', duration: '45 min', content: "Sur un plan de maçonnerie, l'échelle standard est souvent le 1/50 ou 1/100. \n- Au 1/50, 2 centimètres sur le papier représentent 1 mètre dans la réalité.\n- Les cotes sont exprimées en centimètres ou en mètres. Lisez toujours les cotes cumulées pour éviter d'additionner des erreurs de millimètres bout à bout." },
-      { id: 'm2c2', title: 'Le théorème de Pythagore (Règle du 3-4-5)', duration: '30 min', content: "Pour faire un angle parfaitement droit (90°) sans grande équerre de maçon, utilisez la règle du 3-4-5 :\n\n1. Mesurez 3 mètres sur votre premier cordeau.\n2. Mesurez 4 mètres sur le cordeau perpendiculaire.\n3. La diagonale entre ces deux points doit mesurer exactement 5 mètres. Si c'est le cas, votre angle est parfait !" },
-      { id: 'm2c3', title: 'Tirer les cordeaux et les chaises', duration: '1h', content: "Les chaises d'implantation sont des piquets en bois plantés à l'extérieur de la zone de terrassement, reliés par une planche horizontale. Elles permettent de tendre des cordeaux (ficelles) qui matérialiseront l'axe de vos futurs murs sans vous gêner pendant que vous creusez les fondations." }
+      { 
+        id: 'm2c1', title: 'Les Chaises d\'Implantation', duration: '45 min', 
+        content: "C'est l'étape qui transfère le plan sur le terrain.\n\nLes 'chaises' sont deux piquets de bois plantés fermement, reliés par une planche horizontale parfaitement de niveau. On les place à l'extérieur de la zone à terrasser (recul de 1.5m) pour éviter qu'elles soient arrachées par la pelle mécanique.\n\nSur ces planches, on plante un clou. En reliant un clou d'une chaise à la chaise opposée avec un cordeau (ficelle fluo très résistante), on matérialise l'axe exact de nos futurs murs. L'intersection des cordeaux donne l'angle de la construction." 
+      },
+      { 
+        id: 'm2c2', title: 'Nivellement : Tuyau d\'eau et Laser', duration: '30 min', 
+        content: "Comment s'assurer que deux points distants de 20 mètres sont exactement à la même hauteur ?\n\n• Le niveau à eau (méthode traditionnelle) : Un long tuyau transparent rempli d'eau. Selon le principe des vases communicants, le niveau de l'eau sera toujours rigoureusement identique aux deux extrémités du tuyau, peu importe le terrain au milieu.\n• Le niveau Laser rotatif : Posé sur un trépied au centre du terrain, il projette une ligne rouge ou verte parfaitement horizontale à 360°. On utilise un récepteur fixé sur une mire (grande règle graduée) pour relever les hauteurs dans les fouilles." 
+      },
+      { 
+        id: 'm2c3', title: 'L\'Équerrage (Théorème de Pythagore)', duration: '30 min', 
+        content: "Sur de grandes longueurs, une équerre de maçon est trop imprécise. On utilise la méthode du 3-4-5 (a² + b² = c²).\n\n1. À l'intersection de vos cordeaux, mesurez exactement 3 mètres sur le cordeau A et faites une marque.\n2. Mesurez 4 mètres sur le cordeau B et marquez-le.\n3. Mesurez la diagonale entre ces deux marques.\n4. Si la diagonale mesure EXACTEMENT 5 mètres, votre angle est à 90°. Sinon, décalez doucement un cordeau sur sa chaise jusqu'à obtenir 5 mètres." 
+      }
     ]
   },
   {
-    id: 'm3', title: 'Fondations & Soubassements', icon: <Layers size={24} />, color: 'from-stone-500 to-stone-700',
-    level: 'Intermédiaire', duration: '4h30',
+    id: 'm3', title: 'Les Fondations (DTU 13.1)', icon: <Layers size={24} />, color: 'from-stone-500 to-stone-700',
+    level: 'Intermédiaire', duration: '4h',
     chapters: [
-      { id: 'm3c1', title: 'Décaissement et mise hors gel', duration: '40 min', content: "Les fondations doivent descendre sous la ligne de 'mise hors gel'. Si l'eau gèle sous vos fondations, elle gonfle et soulève la maison, fissurant les murs. Cette profondeur varie selon les régions (de 50 cm sur le littoral à plus d'1 mètre en montagne)." },
-      { id: 'm3c2', title: 'Le ferraillage des semelles', duration: '1h', content: "Le béton résiste très bien à la compression, mais mal à la traction. C'est pourquoi on y ajoute de l'acier (béton armé).\n\nDans le fond de votre fouille (sur un béton de propreté), placez vos armatures (semelles filantes) en les surélevant de 4 à 5 cm avec des cales, pour qu'elles soient parfaitement enrobées par le béton et ne rouillent pas." },
-      { id: 'm3c3', title: 'Couler et vibrer le béton', duration: '1h', content: "Une fois le béton coulé dans la fouille, il faut le vibrer à l'aide d'une aiguille vibrante (ou en tapotant le coffrage) pour chasser les bulles d'air. Attention à ne pas trop vibrer, sous peine de voir les graviers tomber au fond et l'eau remonter (phénomène de ségrégation)." }
+      { 
+        id: 'm3c1', title: 'Fouilles et profondeur Hors-Gel', duration: '40 min', 
+        content: "Une maison solide commence dans la terre. Vous devez creuser jusqu'à atteindre le 'bon sol' (la couche d'assise porteuse).\n\nLa profondeur hors-gel : Les semelles doivent reposer sous cette ligne virtuelle. Si l'eau gèle sous la fondation, elle gonfle (augmentation de volume de 9%), soulève la maison et crée des fissures structurelles. \nLa profondeur dépend de la région : 50 cm en climat doux océanique, 80 cm dans l'Est, et plus de 1m en montagne." 
+      },
+      { 
+        id: 'm3c2', title: 'Béton de propreté et Enrobage', duration: '30 min', 
+        content: "Ne posez JAMAIS l'acier directement sur la terre !\n\n1. Béton de propreté : Au fond de la fouille, coulez 4 cm d'un béton faiblement dosé (150kg/m³). Il crée une surface de travail plane et propre.\n2. L'Enrobage : L'acier de vos semelles filantes doit être totalement enrobé de béton (min 3 à 5 cm tout autour) pour le protéger de la corrosion. Utilisez des cales en plastique pour surélever les armatures sur le béton de propreté." 
+      },
+      { 
+        id: 'm3c3', title: 'Recouvrement et liaisons d\'angle', duration: '45 min', 
+        content: "Les armatures (semelles de 6m de long) doivent être reliées entre elles.\n\n• Le recouvrement : Les fers doivent se superposer sur une longueur égale à 50 fois leur diamètre (Ex: pour un fer de Ø10mm, le recouvrement est de 50cm). Attachez-les avec du fil de fer recuit et une tenaille.\n• Les angles : On ne croise pas simplement les semelles dans les angles. On utilise des équerres de liaison (fers tordus à 90°) pour assurer la continuité mécanique de la fondation." 
+      }
     ]
   },
   {
-    id: 'm4', title: 'Les Liants : Mortiers & Bétons', icon: <Droplets size={24} />, color: 'from-slate-400 to-slate-600',
-    level: 'Intermédiaire', duration: '2h30',
+    id: 'm4', title: 'Liants : Mortiers & Bétons', icon: <Droplets size={24} />, color: 'from-slate-400 to-slate-600',
+    level: 'Intermédiaire', duration: '3h',
     chapters: [
-      { id: 'm4c1', title: 'Différence entre mortier et béton', duration: '20 min', content: "L'erreur classique du débutant !\n\n- Le MORTIER = Ciment (ou chaux) + Sable + Eau. Il sert à 'coller' (monter des parpaings, faire un enduit, une chape).\n- Le BÉTON = Ciment + Sable + GRAVIER + Eau. Il sert à structurer (faire une dalle, une fondation, un linteau). Le gravier lui donne sa résistance mécanique." },
-      { id: 'm4c2', title: 'Les dosages standards', duration: '45 min', content: "Pour le Béton standard (Dalle) :\nDosé à 350 kg/m³. On utilise souvent la règle du 1-2-3 à la pelle :\n- 1 volume de ciment\n- 2 volumes de sable\n- 3 volumes de gravier\n- 1/2 volume d'eau\n\nPour le Mortier de montage (Parpaings) :\nDosé à environ 300 kg/m³. Règle : 1 seau de ciment pour 3 à 4 seaux de sable." }
+      { 
+        id: 'm4c1', title: 'La différence fondamentale', duration: '20 min', 
+        content: "Ne confondez plus jamais ces deux liants.\n\nLE MORTIER : Ciment (ou chaux) + Sable + Eau.\nC'est la 'colle'. Il sert à jointer les parpaings, sceller des appuis, faire une chape ou un enduit.\n\nLE BÉTON : Ciment + Sable + GRAVIERS + Eau.\nC'est la 'structure'. Le gravier forme le squelette qui encaisse la compression (le poids). Il sert pour les fondations, dalles, poteaux et linteaux." 
+      },
+      { 
+        id: 'm4c2', title: 'La règle des dosages (Cimenterie)', duration: '45 min', 
+        content: "Dosage standard Béton (350 kg/m³) :\nÀ la pelle (règle du 1-2-3) : 1 volume de ciment, 2 de sable, 3 de graviers, 1/2 d'eau.\nÀ la bétonnière (pour 1 sac de 35kg) : 35kg ciment + 50L sable + 70L graviers + 17L eau.\n\nDosage Mortier de montage (300 kg/m³) :\nPour 1 sac de 35kg de ciment : 100 à 120L de sable (soit 10 à 12 seaux de maçon) + 17L d'eau.\n\nATTENTION : Trop d'eau ruine la résistance du béton et crée de la laitance. L'eau ne doit représenter que la moitié du poids du ciment." 
+      },
+      { 
+        id: 'm4c3', title: 'La Chaux et le Mortier Bâtard', duration: '30 min', 
+        content: "Pour la rénovation de vieux murs en pierre, le ciment gris (Portland) est à proscrire : il est trop rigide et bloque l'humidité, faisant pourrir la pierre.\n\nOn utilise la Chaux (NHL 3.5 ou NHL 5). Elle est souple, respirante, et fongicide.\nLe 'Mortier Bâtard' est un mélange : 50% Ciment + 50% Chaux + Sable + Eau. Il combine la résistance rapide du ciment et la souplesse de la chaux. Parfait pour sceller des tuiles ou crépir un muret." 
+      }
     ]
   },
   {
-    id: 'm5', title: 'Élévation : Parpaings (Agglos)', icon: <Box size={24} />, color: 'from-orange-600 to-red-700',
-    level: 'Intermédiaire', duration: '5h',
+    id: 'm5', title: 'Élévation : Murs en Parpaings', icon: <Box size={24} />, color: 'from-orange-600 to-red-700',
+    level: 'Avancé', duration: '5h',
     chapters: [
-      { id: 'm5c1', title: 'L\'arase et le premier rang', duration: '45 min', content: "Le premier rang est le plus important de toute votre construction. S'il est de travers, tout le mur sera de travers.\n1. Étalez un lit de mortier épais.\n2. Posez vos parpaings d'angle en premier.\n3. Réglez-les parfaitement de niveau (horizontal) et d'aplomb (vertical).\n4. Tendez un cordeau entre ces blocs pour aligner le reste du rang." },
-      { id: 'm5c2', title: 'Monter les rangs courants (Croisement)', duration: '2h', content: "Les parpaings doivent toujours être croisés en quinconce d'un rang sur l'autre, généralement d'un demi-bloc. Cela répartit les charges et solidarise le mur. Utilisez une truelle pour déposer deux bandes de mortier sur les parois du parpaing inférieur, puis posez le nouveau bloc en tapotant doucement avec le manche de la truelle." },
-      { id: 'm5c3', title: 'Les joints', duration: '1h', content: "Au fur et à mesure que vous montez vos blocs, récupérez l'excédent de mortier qui bave avec votre truelle. Une fois le mortier un peu 'tiré' (légèrement durci), passez un fer à joint (ou un morceau de tuyau d'arrosage) pour lisser les joints et les rendre étanches." }
+      { 
+        id: 'm5c1', title: 'La Coupure de capillarité (Arase)', duration: '45 min', 
+        content: "L'humidité du sol remonte dans les murs (capillarité), détruisant les plâtres intérieurs. Pour bloquer cela, le DTU impose une coupure sous le premier rang habitable.\n\nSoit on déroule une bande bitumeuse (feutre), soit on réalise une 'arase étanche' : une couche de mortier de 2cm d'épaisseur, fortement dosée (400kg/m³) et additionnée d'hydrofuge de masse (adjuvant liquide qui bouche les pores du ciment)." 
+      },
+      { 
+        id: 'm5c2', title: 'Le rang de départ', duration: '1h', 
+        content: "Si le 1er rang est de travers, tout le mur le sera.\n1. Étalez un lit de mortier épais.\n2. Posez vos blocs d'angle (blocs creux pour recevoir les fers verticaux) aux extrémités du mur.\n3. Réglez-les au millimètre (fil à plomb et grand niveau).\n4. Tendez un cordeau bien tendu entre les arêtes supérieures de ces deux blocs. Ne touchez jamais le cordeau en posant les blocs intermédiaires (laissez 1mm d'écart)." 
+      },
+      { 
+        id: 'm5c3', title: 'Croisement et joints', duration: '1h30', 
+        content: "Règle d'or : Les joints verticaux ne doivent jamais être superposés (coup de sabre). On croise les blocs d'un demi-parpaing ou d'un tiers au minimum pour répartir les charges.\n\nPose : Déposez deux boudins de mortier sur les bords extérieurs du parpaing inférieur. Graissez les 'oreilles' du nouveau bloc. Positionnez, tapotez avec le manche de la truelle pour régler l'aplomb.\nFinition : Une fois le mortier un peu 'tiré' (durci), passez un fer à joint (ou un morceau de tuyau d'arrosage) pour serrer et lisser les joints." 
+      }
     ]
   },
   {
-    id: 'm6', title: 'Béton Armé : Poteaux & Linteaux', icon: <Ruler size={24} />, color: 'from-zinc-500 to-zinc-800',
+    id: 'm6', title: 'Dalles & Planchers (Hérisson)', icon: <Layers size={24} />, color: 'from-cyan-600 to-cyan-800',
     level: 'Avancé', duration: '4h',
     chapters: [
-      { id: 'm6c1', title: 'Coffrer un linteau', duration: '1h30', content: "Le linteau est la poutre qui soutient le mur au-dessus d'une fenêtre ou d'une porte.\nPour le réaliser, utilisez des parpaings en 'U' (blocs linteaux) ou fabriquez un coffrage en planches de bois étayé par en dessous. Assurez-vous que les étais sont fermement réglés." },
-      { id: 'm6c2', title: 'Ferraillage et coulage du linteau', duration: '1h', content: "Placez une armature de chaînage rectangulaire dans votre coffrage. Les aciers ne doivent pas toucher le bois (utilisez des enrobeurs plastiques). Coulez un béton fortement dosé, vibrez-le bien pour qu'il s'infiltre partout autour des fers, et arasez la surface à la truelle." }
-    ]
-  },
-  {
-    id: 'm7', title: 'Dalles & Chapes', icon: <Layers size={24} />, color: 'from-cyan-600 to-cyan-800',
-    level: 'Avancé', duration: '4h',
-    chapters: [
-      { id: 'm7c1', title: 'Préparer le hérisson et le polyane', duration: '1h', content: "Avant de couler une dalle sur terre-plein :\n1. Étalez une couche de graviers/cailloux compactés (le hérisson) sur 15cm pour drainer l'eau.\n2. Déroulez un film polyane (plastique) en faisant se chevaucher les lés de 20cm avec du gros scotch. Cela empêchera les remontées d'humidité dans votre maison." },
-      { id: 'm7c2', title: 'Tirer une dalle à la règle', duration: '1h30', content: "Posez votre treillis soudé sur des cales. Coulez le béton en commençant par le fond de la pièce. Utilisez une grande règle de maçon en aluminium, posée sur des guides préalablement mis de niveau. Faites des mouvements de gauche à droite (en 'sciant') tout en reculant pour niveler le béton." }
-    ]
-  },
-  {
-    id: 'm8', title: 'Enduits de Façade', icon: <Paintbrush size={24} />, color: 'from-amber-200 to-amber-500',
-    level: 'Expert', duration: '4h',
-    chapters: [
-      { id: 'm8c1', title: 'Le gobetis (Couche d\'accroche)', duration: '45 min', content: "Un enduit traditionnel se fait en 3 couches. La première est le Gobetis.\nC'est un mortier très liquide, très riche en ciment. On le projette violemment à la truelle contre le mur en parpaings pour créer une surface rugueuse, ce qui permettra à la couche suivante de s'accrocher fermement." },
-      { id: 'm8c2', title: 'Le corps d\'enduit et la finition', duration: '2h', content: "La deuxième couche (le corps d'enduit) vient redresser le mur. Elle s'applique grassement et se tire à la règle. \nLa dernière couche (la finition) donne l'aspect final. Vous pouvez la talocher avec une taloche en plastique ou en éponge (aspect lisse) ou la gratter avec un gratton (aspect rustique)." }
+      { 
+        id: 'm6c1', title: 'Hérisson et Film Polyane', duration: '1h', 
+        content: "Pour une dalle sur terre-plein (rez-de-chaussée) :\n1. Le Hérisson : Couche de 15 à 20 cm de cailloux (calibre 40/80) compactés à la plaque vibrante. Il sert à drainer l'eau sous la dalle et créer une assise solide. (On n'utilise jamais de terre ou de gravats contenant du plâtre).\n2. Le Polyane : Film plastique épais déroulé sur le hérisson, remontant sur les bords des murs. Il bloque définitivement les remontées d'humidité." 
+      },
+      { 
+        id: 'm6c2', title: 'Treillis soudé et Joints de dilatation', duration: '1h', 
+        content: "Le treillis soudé (ST25 C en général pour une dalle de maison) est le ferraillage de la dalle. Il doit être posé sur des cales pour être noyé au milieu de l'épaisseur du béton (souvent 12 cm au total).\n\nLe béton se dilate avec la chaleur et se rétracte au séchage. Pour éviter des fissures anarchiques, on place des joints de fractionnement (profilés en PVC) tous les 15 à 20 m², ou on scie la dalle sur 1/3 de son épaisseur le lendemain du coulage." 
+      },
+      { 
+        id: 'm6c3', title: 'Tirer la dalle à la règle', duration: '1h30', 
+        content: "Commencez par couler le béton au fond de la pièce pour reculer vers la sortie.\nLe geste du tirage : Utilisez une grande règle en aluminium posée sur des guides préalablement mis de niveau (tubes en acier ou joints PVC). Faites des mouvements de va-et-vient latéraux (comme une scie) en tirant la règle vers vous. Le mouvement latéral fait remonter la laitance et lisse la surface, tandis que le mouvement arrière égalise la hauteur." 
+      }
     ]
   }
 ];
 
-// --- DONNÉES : GLOSSAIRE ---
 const GLOSSAIRE = [
-  { term: 'Arase', def: 'Couche de mortier parfaitement de niveau sur laquelle on monte le premier rang.' },
-  { term: 'Barbotine', def: 'Mélange liquide de ciment et d\'eau servant de liaison entre deux couches.' },
-  { term: 'Chaînage', def: 'Armature en acier noyée dans le béton pour lier et solidifier les murs.' },
-  { term: 'Cordeau', def: 'Ficelle tendue entre deux points servant de guide d\'alignement.' },
-  { term: 'Décaissement', def: 'Action de creuser le sol pour préparer des fondations.' },
-  { term: 'Enduit', def: 'Préparation de mortier appliquée sur un mur pour le protéger et le décorer.' },
-  { term: 'Équerrage', def: 'Action de vérifier qu\'un angle fait exactement 90 degrés.' },
-  { term: 'Ferraillage', def: 'Armatures métalliques destinées à armer le béton.' },
-  { term: 'Gâchage', def: 'Action de mélanger le ciment, le sable, les graviers et l\'eau.' },
-  { term: 'Hérisson', def: 'Couche de graviers damés constituant l\'assise d\'une dalle.' },
-  { term: 'Linteau', def: 'Poutre située au-dessus d\'une ouverture (porte, fenêtre).' },
-  { term: 'Parpaing', def: 'Bloc de béton manufacturé. Le composant de base des murs maçonnés.' },
-  { term: 'Ragréage', def: 'Opération consistant à lisser une surface avant de poser un revêtement.' },
-  { term: 'Taloche', def: 'Plaque munie d\'une poignée, servant à porter ou lisser le mortier.' },
-  { term: 'Truelle', def: 'L\'outil symbolique du maçon, servant à manipuler le mortier.' }
+  { term: 'Adjuvant', def: 'Produit ajouté au béton ou mortier pour modifier ses propriétés (antigel, hydrofuge, plastifiant).' },
+  { term: 'Agglo', def: 'Abréviation d\'aggloméré, l\'autre nom commun du parpaing de ciment.' },
+  { term: 'Arase', def: 'Couche de mortier parfaitement de niveau sur laquelle on monte le premier rang d\'un mur.' },
+  { term: 'Banche', def: 'Grand panneau de coffrage (souvent métallique) utilisé pour couler des murs entiers en béton armé.' },
+  { term: 'Barbotine', def: 'Mélange très liquide de ciment et d\'eau servant de colle de liaison (souvent utilisé pour le carrelage ou la reprise de béton).' },
+  { term: 'Chaînage', def: 'Armature en acier noyée dans le béton (horizontale ou verticale) pour lier, ceinturer et solidifier les murs.' },
+  { term: 'Cordeau', def: 'Ficelle colorée tendue entre deux piquets ou blocs servant de guide d\'alignement rectiligne.' },
+  { term: 'Coup de sabre', def: 'Défaut grave de maçonnerie où les joints verticaux de deux rangs de parpaings sont superposés, créant une ligne de fragilité.' },
+  { term: 'Cure du béton', def: 'Action de protéger le béton frais contre une évaporation trop rapide de son eau (bâchage ou arrosage en plein été).' },
+  { term: 'Décaissement', def: 'Action de creuser et retirer la couche de terre végétale pour atteindre le bon sol.' },
+  { term: 'Enrobage', def: 'Épaisseur de béton recouvrant les armatures en acier pour les protéger de la corrosion (minimum 3cm).' },
+  { term: 'Équerrage', def: 'Action de vérifier ou tracer un angle à exactement 90 degrés (règle du 3-4-5).' },
+  { term: 'Ferraillage', def: 'Mise en place des armatures métalliques destinées à armer le béton et lui donner sa résistance à la traction.' },
+  { term: 'Gâchage', def: 'Action de mélanger le liant (ciment/chaux), les agrégats (sable/gravier) et l\'eau pour obtenir le mortier/béton.' },
+  { term: 'Gobetis', def: 'Première couche d\'un enduit, projetée très liquide, servant de couche d\'accroche rugueuse pour le corps d\'enduit.' },
+  { term: 'Hérisson', def: 'Couche de pierres et graviers damés, exempte de terre, constituant la couche drainante sous une dalle.' },
+  { term: 'Hydrofuge', def: 'Produit (liquide ou poudre) qui rend un mortier ou un béton imperméable à l\'eau.' },
+  { term: 'Linteau', def: 'Poutre horizontale en béton armé, bois ou acier, située au-dessus d\'une ouverture (porte, fenêtre) soutenant la maçonnerie supérieure.' },
+  { term: 'Laitance', def: 'Couche blanchâtre et friable qui remonte à la surface d\'un béton trop riche en eau.' },
+  { term: 'Parpaing', def: 'Bloc de maçonnerie manufacturé en béton, creux ou plein. Standard : 50x20x20cm.' },
+  { term: 'Plumb (Aplomb)', def: 'Ce qui est parfaitement vertical (vérifié au fil à plomb ou au niveau).' },
+  { term: 'Polyane', def: 'Film plastique épais étanche placé sous le béton d\'une dalle pour bloquer les remontées capillaires d\'humidité.' },
+  { term: 'Ragréage', def: 'Application d\'un enduit très fin et auto-lissant sur une dalle pour rattraper les défauts de planéité avant pose d\'un revêtement.' },
+  { term: 'Refus (Bon sol)', def: 'Couche géologique profonde et dure sur laquelle les fondations peuvent reposer sans risque d\'affaissement.' },
+  { term: 'Semelle', def: 'Base de la fondation (souvent filante sous les murs), armée de ferraillage, qui répartit le poids du bâtiment sur le sol.' },
+  { term: 'Taloche', def: 'Outil de maçon, plaque munie d\'une poignée, servant à porter le mortier ou à réaliser la finition d\'un enduit.' },
+  { term: 'Tirage', def: 'Action de niveler et lisser le béton frais d\'une dalle en reculant avec une règle en aluminium.' },
+  { term: 'Treillis soudé', def: 'Grillage d\'armatures en acier croisées et soudées, utilisé pour ferrailler les dalles et planchers.' },
+  { term: 'Truelle', def: 'L\'outil symbolique du maçon. Lame d\'acier servant à prendre, jeter, étaler et couper le mortier.' },
+  { term: 'Vibration', def: 'Action d\'utiliser une aiguille vibrante plongée dans le béton frais pour en expulser l\'air et le compacter.' }
 ];
+
+const BADGES = [
+  { id: 'bd1', name: 'Le Casque', desc: 'Profil créé', icon: <HardHat size={24}/> },
+  { id: 'bd2', name: 'Sécurisé', desc: 'Module 1 fini', icon: <Shield size={24}/> },
+  { id: 'bd3', name: 'Chef de Chantier', desc: '5 leçons lues', icon: <BookOpen size={24}/> },
+  { id: 'bd4', name: 'L\'Artisan', desc: 'Plus de 10 leçons', icon: <Trophy size={24}/> },
+];
+
+const LoadingScreen = () => (
+  <div className="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center z-[999] overflow-hidden">
+    <style>{`
+      @keyframes dropHeavy {
+        0% { transform: translateY(-300px); opacity: 0; }
+        60% { transform: translateY(10px); opacity: 1; }
+        80% { transform: translateY(-5px); opacity: 1; }
+        100% { transform: translateY(0); opacity: 1; }
+      }
+      .b-1 { animation: dropHeavy 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards; opacity: 0; animation-delay: 0.1s; }
+      .b-2 { animation: dropHeavy 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards; opacity: 0; animation-delay: 0.4s; }
+      .b-3 { animation: dropHeavy 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards; opacity: 0; animation-delay: 0.7s; }
+      .b-4 { animation: dropHeavy 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards; opacity: 0; animation-delay: 1.0s; }
+      .b-5 { animation: dropHeavy 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards; opacity: 0; animation-delay: 1.3s; }
+    `}</style>
+    <div className="relative w-48 h-40 mb-8">
+      <div className="b-1 absolute bottom-0 left-0 w-14 h-8 bg-stone-400 border-[3px] border-stone-600 shadow-lg flex items-center justify-center"><div className="w-8 h-3 border-2 border-stone-500 rounded-sm"></div></div>
+      <div className="b-2 absolute bottom-0 left-[60px] w-14 h-8 bg-stone-400 border-[3px] border-stone-600 shadow-lg flex items-center justify-center"><div className="w-8 h-3 border-2 border-stone-500 rounded-sm"></div></div>
+      <div className="b-3 absolute bottom-0 left-[120px] w-14 h-8 bg-stone-400 border-[3px] border-stone-600 shadow-lg flex items-center justify-center"><div className="w-8 h-3 border-2 border-stone-500 rounded-sm"></div></div>
+      <div className="b-4 absolute bottom-[32px] left-[30px] w-14 h-8 bg-stone-400 border-[3px] border-stone-600 shadow-lg flex items-center justify-center"><div className="w-8 h-3 border-2 border-stone-500 rounded-sm"></div></div>
+      <div className="b-5 absolute bottom-[32px] left-[90px] w-14 h-8 bg-stone-400 border-[3px] border-stone-600 shadow-lg flex items-center justify-center"><div className="w-8 h-3 border-2 border-stone-500 rounded-sm"></div></div>
+    </div>
+    <h2 className="text-amber-500 font-black text-xl tracking-widest uppercase animate-pulse">Coulage des fondations...</h2>
+  </div>
+);
+
+// ==========================================
+// DÉBUT DE LA PARTIE 2 (Composant Principal)
+// ==========================================
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('home');
   const [selectedModule, setSelectedModule] = useState(null);
-  const [activeLesson, setActiveLesson] = useState(null); // Gère l'affichage d'une leçon en plein écran
+  const [activeLesson, setActiveLesson] = useState(null); 
   
-  // Profil State & Sauvegarde Locale
   const [userProfile, setUserProfile] = useState({ name: '', level: 'Apprenti', avatar: '', completedLessons: [] });
-  const [isNewUser, setIsNewUser] = useState(false);
+  const [isNewUser, setIsNewUser] = useState(true);
   const [profileForm, setProfileForm] = useState({ name: '', level: 'Apprenti' });
 
   // Outils States
@@ -117,16 +210,17 @@ export default function App() {
   const [calcDepth, setCalcDepth] = useState('');
   const [wallLength, setWallLength] = useState('');
   const [wallHeight, setWallHeight] = useState('');
+  
+  // Glossaire State
   const [searchQuery, setSearchQuery] = useState('');
 
-  // 1. Initialisation au lancement
+  // 1. Initialisation
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 2000);
-    const saved = localStorage.getItem('batipro_v3_profile');
+    const timer = setTimeout(() => setIsLoading(false), 2000); // 2 secondes de faux chargement pour voir l'animation
+    const saved = localStorage.getItem('batipro_v5_profile');
     if (saved) {
       setUserProfile(JSON.parse(saved));
-    } else {
-      setIsNewUser(true);
+      setIsNewUser(false);
     }
     return () => clearTimeout(timer);
   }, []);
@@ -142,7 +236,7 @@ export default function App() {
       completedLessons: userProfile.completedLessons || []
     };
     setUserProfile(newProfile);
-    localStorage.setItem('batipro_v3_profile', JSON.stringify(newProfile));
+    localStorage.setItem('batipro_v5_profile', JSON.stringify(newProfile));
     setIsNewUser(false);
   };
 
@@ -152,9 +246,9 @@ export default function App() {
       const updatedLessons = [...userProfile.completedLessons, lessonId];
       const updatedProfile = { ...userProfile, completedLessons: updatedLessons };
       setUserProfile(updatedProfile);
-      localStorage.setItem('batipro_v3_profile', JSON.stringify(updatedProfile));
+      localStorage.setItem('batipro_v5_profile', JSON.stringify(updatedProfile));
     }
-    setActiveLesson(null); // Ferme la leçon
+    setActiveLesson(null);
   };
 
   // 4. Calcul de progression dynamique
@@ -167,46 +261,54 @@ export default function App() {
 
   const totalFinished = userProfile.completedLessons?.length || 0;
 
-  // 5. Conditions dynamiques des Badges
-  const BADGES = [
-    { id: 'bd1', name: 'Nouveau Casque', desc: 'Profil créé', icon: <HardHat size={24}/>, unlocked: userProfile.name !== '' },
-    { id: 'bd2', name: 'Bases Solides', desc: 'Fini le Module 1', icon: <Shield size={24}/>, unlocked: getModuleProgress(MODULES[0]) === 100 },
-    { id: 'bd3', name: 'Apprenti Actif', desc: '5 leçons terminées', icon: <BookOpen size={24}/>, unlocked: totalFinished >= 5 },
-    { id: 'bd4', name: 'Maître Bâtisseur', desc: 'Toutes les leçons', icon: <Trophy size={24}/>, unlocked: totalFinished >= 20 },
-  ];
-  const unlockedBadgesCount = BADGES.filter(b => b.unlocked).length;
+  // 5. Conditions dynamiques des Badges (Évaluées à la volée)
+  const badgesWithStatus = BADGES.map(b => {
+    let unlocked = false;
+    if (b.id === 'bd1') unlocked = userProfile.name !== '';
+    if (b.id === 'bd2') unlocked = getModuleProgress(MODULES[0]) === 100;
+    if (b.id === 'bd3') unlocked = totalFinished >= 5;
+    if (b.id === 'bd4') unlocked = totalFinished >= 10;
+    return { ...b, unlocked };
+  });
+  
+  const unlockedBadgesCount = badgesWithStatus.filter(b => b.unlocked).length;
 
   // Logiques Calculatrices
   const calcConcrete = useMemo(() => {
     const l = parseFloat(calcLength), w = parseFloat(calcWidth), d = parseFloat(calcDepth) / 100;
     if (!l || !w || !d || l <= 0 || w <= 0 || d <= 0) return null;
     const vol = l * w * d;
-    return { vol: vol.toFixed(2), ciment: Math.ceil(vol * 10), sable: Math.round(vol * 800), gravier: Math.round(vol * 1000), eau: Math.round(vol * 175) };
+    return { 
+      vol: vol.toFixed(2), 
+      ciment: Math.ceil(vol * 10), // 350kg/m3 = 10 sacs de 35kg
+      sable: Math.round(vol * 800), 
+      gravier: Math.round(vol * 1000), 
+      eau: Math.round(vol * 175) 
+    };
   }, [calcLength, calcWidth, calcDepth]);
 
   const calcWall = useMemo(() => {
     const l = parseFloat(wallLength), h = parseFloat(wallHeight);
     if (!l || !h || l <= 0 || h <= 0) return null;
     const area = l * h;
-    const totalBlocks = Math.ceil((area / 0.1) * 1.05); // Parpaing 20x50 = 0.1m2
-    return { area: area.toFixed(2), blocks: totalBlocks, mortar: Math.ceil(area * 15) };
+    const totalBlocks = Math.ceil((area / 0.1) * 1.05); // Un parpaing 20x50 = 0.1m², +5% de casse
+    return { 
+      area: area.toFixed(2), 
+      blocks: totalBlocks, 
+      mortar: Math.ceil(area * 15) // ~15 Litres par m²
+    };
   }, [wallLength, wallHeight]);
 
-  // --- ECRAN DE CHARGEMENT ---
-  if (isLoading) return (
-    <div className="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center z-[999]">
-      <div className="w-16 h-16 border-4 border-slate-800 border-t-amber-500 rounded-full animate-spin mb-6"></div>
-      <h2 className="text-amber-500 font-black text-xl tracking-widest uppercase animate-pulse">Chargement BâtiPro...</h2>
-    </div>
-  );
+  // --- ECRAN CHARGEMENT ---
+  if (isLoading) return <LoadingScreen />;
 
-  // --- ECRAN ONBOARDING ---
+  // --- ECRAN ONBOARDING (Création profil) ---
   if (isNewUser) return (
-    <div className="fixed inset-0 bg-slate-950 text-white flex flex-col p-6">
+    <div className="fixed inset-0 bg-slate-950 text-white flex flex-col p-6 z-[999]">
       <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full">
         <HardHat className="text-amber-500 mx-auto mb-6" size={64} />
         <h1 className="text-3xl font-black text-center mb-2">Bienvenue sur Bâti<span className="text-amber-500">Pro</span></h1>
-        <p className="text-slate-400 text-center mb-10 text-sm">Crée ton profil pour commencer ta formation (sauvegardé sur cet appareil).</p>
+        <p className="text-slate-400 text-center mb-10 text-sm">Crée ton profil pour commencer ta formation. (Progression sauvegardée sur cet appareil).</p>
         <div className="space-y-6">
           <div>
             <label className="text-[10px] font-black uppercase text-slate-500 block mb-2">Ton Prénom ou Surnom</label>
@@ -223,7 +325,7 @@ export default function App() {
             </div>
           </div>
         </div>
-        <button onClick={saveProfile} className="w-full mt-10 bg-amber-500 text-slate-950 py-4 rounded-xl font-black uppercase tracking-widest">Enfiler mon casque</button>
+        <button onClick={saveProfile} className="w-full mt-10 bg-amber-500 text-slate-950 py-4 rounded-xl font-black uppercase tracking-widest shadow-lg shadow-amber-500/20">Enfiler mon casque</button>
       </div>
     </div>
   );
@@ -231,21 +333,24 @@ export default function App() {
   return (
     <div className="fixed inset-0 bg-slate-950 text-slate-100 flex flex-col font-sans overflow-hidden">
       
-      {/* HEADER */}
+      {/* HEADER PRINCIPAL */}
       {!selectedModule && !activeLesson && (
-        <header className="px-6 pt-6 pb-2 bg-slate-950 flex justify-between items-center z-40 relative">
+        <header className="px-6 pt-6 pb-2 bg-slate-950 flex justify-between items-center z-40 relative border-b border-white/5">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center text-slate-950 shadow-lg shadow-amber-500/20"><HardHat size={22}/></div>
-            <div><h1 className="text-xl font-black text-white leading-none">Bâti<span className="text-amber-500">Pro</span></h1></div>
+            <div>
+              <h1 className="text-xl font-black text-white leading-none">Bâti<span className="text-amber-500">Pro</span></h1>
+              <span className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">L'Encyclopédie</span>
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-full border-2 border-slate-700 overflow-hidden"><img src={userProfile.avatar} alt="Avatar" className="w-full h-full object-cover"/></div>
+          <button onClick={() => setActiveTab('profile')} className="w-10 h-10 rounded-full border-2 border-slate-700 overflow-hidden"><img src={userProfile.avatar} alt="Avatar" className="w-full h-full object-cover"/></button>
         </header>
       )}
 
-      {/* CONTENU PRINCIPAL */}
+      {/* ZONE DE CONTENU PRINCIPALE */}
       <main className="flex-1 overflow-y-auto custom-scroll pb-24 relative">
         
-        {/* --- 1. ACCUEIL --- */}
+        {/* --- ONGLET 1 : ACCUEIL --- */}
         {activeTab === 'home' && !selectedModule && !activeLesson && (
           <div className="animate-in fade-in duration-500 space-y-8 p-6">
             <div>
@@ -262,14 +367,14 @@ export default function App() {
               <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl flex flex-col items-center text-center">
                 <Medal className="text-emerald-500 mb-2" size={28} />
                 <span className="text-2xl font-black text-white">{unlockedBadgesCount} / {BADGES.length}</span>
-                <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Badges débloqués</span>
+                <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Badges obtenus</span>
               </div>
             </div>
 
             <div className="bg-slate-900 border border-slate-800 rounded-[2rem] p-6">
               <h3 className="text-[10px] font-black uppercase text-slate-500 mb-4 flex items-center gap-2"><Trophy size={14}/> Tes Trophées</h3>
               <div className="grid grid-cols-2 gap-3">
-                {BADGES.map((b) => (
+                {badgesWithStatus.map((b) => (
                   <div key={b.id} className={`p-4 rounded-2xl border flex flex-col items-center text-center transition-all ${b.unlocked ? 'bg-amber-500/10 border-amber-500/30 text-amber-500' : 'bg-slate-950 border-slate-800 opacity-50 text-slate-600'}`}>
                       <div className="mb-2">{b.icon}</div>
                       <div className={`text-xs font-black mb-1 ${b.unlocked ? 'text-white' : 'text-slate-500'}`}>{b.name}</div>
@@ -278,20 +383,24 @@ export default function App() {
                 ))}
               </div>
             </div>
+            
+            <button onClick={() => setActiveTab('courses')} className="w-full bg-slate-900 border border-slate-800 py-4 rounded-2xl font-bold flex justify-center items-center gap-2 hover:bg-slate-800 transition">
+               <BookOpen size={18} className="text-amber-500" /> Reprendre la formation
+            </button>
           </div>
         )}
 
-        {/* --- 2. LISTE DES MODULES --- */}
+        {/* --- ONGLET 2 : COURS (LISTE DES MODULES) --- */}
         {activeTab === 'courses' && !selectedModule && !activeLesson && (
           <div className="animate-in fade-in p-6 space-y-4">
             <div className="mb-6">
               <h1 className="text-3xl font-black text-white mb-1">L'Académie</h1>
-              <p className="text-slate-400 text-sm">Choisis un module pour commencer.</p>
+              <p className="text-slate-400 text-sm">Des fondations jusqu'aux finitions.</p>
             </div>
             {MODULES.map((mod) => {
               const progress = getModuleProgress(mod);
               return (
-                <div key={mod.id} onClick={() => setSelectedModule(mod)} className="bg-slate-900 border border-slate-800 rounded-[2rem] p-5 cursor-pointer hover:border-amber-500/50 transition-all">
+                <div key={mod.id} onClick={() => setSelectedModule(mod)} className="bg-slate-900 border border-slate-800 rounded-[2rem] p-5 cursor-pointer hover:border-amber-500/50 hover:bg-slate-800/80 transition-all shadow-lg">
                   <div className="flex gap-4 items-center">
                     <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${mod.color} flex items-center justify-center text-white shrink-0`}>{mod.icon}</div>
                     <div className="flex-1">
@@ -300,7 +409,7 @@ export default function App() {
                         <span className="text-[10px] font-bold text-slate-400 uppercase">{mod.chapters.length} leçons</span>
                         <span className="text-[10px] font-bold text-amber-500">{progress}%</span>
                       </div>
-                      <div className="w-full bg-slate-950 rounded-full h-1.5 mt-2 overflow-hidden">
+                      <div className="w-full bg-slate-950 rounded-full h-1.5 mt-2 overflow-hidden border border-slate-800">
                         <div className="bg-amber-500 h-full rounded-full transition-all duration-700" style={{ width: `${progress}%` }}></div>
                       </div>
                     </div>
@@ -311,26 +420,28 @@ export default function App() {
           </div>
         )}
 
-        {/* --- 3. DÉTAIL D'UN MODULE (Liste des leçons) --- */}
+        {/* --- 3. DÉTAIL D'UN MODULE (LISTE DES CHAPITRES) --- */}
         {activeTab === 'courses' && selectedModule && !activeLesson && (
           <div className="animate-in slide-in-from-right h-full flex flex-col absolute inset-0 bg-slate-950 z-50">
             <div className={`pt-12 pb-8 px-6 bg-gradient-to-br ${selectedModule.color} rounded-b-[3rem] shadow-2xl shrink-0 relative`}>
-              <button onClick={() => setSelectedModule(null)} className="absolute top-6 left-6 w-10 h-10 bg-black/30 rounded-full flex items-center justify-center text-white"><ArrowLeft size={20} /></button>
+              <button onClick={() => setSelectedModule(null)} className="absolute top-6 left-6 w-10 h-10 bg-black/30 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-black/50"><ArrowLeft size={20} /></button>
               <div className="mt-8">
+                <span className="text-white/80 text-[10px] font-black uppercase tracking-widest">{selectedModule.level} • {selectedModule.duration}</span>
                 <h1 className="text-3xl font-black text-white mt-2 leading-tight">{selectedModule.title}</h1>
-                <p className="text-white/80 mt-2 font-bold">{getModuleProgress(selectedModule)}% Complété</p>
+                <p className="text-white mt-4 font-bold bg-black/20 inline-block px-3 py-1 rounded-full text-xs border border-white/20">{getModuleProgress(selectedModule)}% Complété</p>
               </div>
             </div>
-            <div className="flex-1 p-6 space-y-4 overflow-y-auto pb-24">
+            <div className="flex-1 p-6 space-y-4 overflow-y-auto pb-24 custom-scroll">
+              <h3 className="font-black text-white text-lg mb-2">Programme du module</h3>
               {selectedModule.chapters.map((chap, idx) => {
                 const isFinished = userProfile.completedLessons.includes(chap.id);
                 return (
-                  <div key={idx} onClick={() => setActiveLesson(chap)} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center gap-4 cursor-pointer hover:bg-slate-800 transition">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border-2 ${isFinished ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' : 'bg-slate-950 border-slate-700 text-slate-500'}`}>
+                  <div key={idx} onClick={() => setActiveLesson(chap)} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center gap-4 cursor-pointer hover:bg-slate-800 transition group">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border-2 ${isFinished ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' : 'bg-slate-950 border-slate-700 text-slate-500 group-hover:border-amber-500 group-hover:text-amber-500'}`}>
                       {isFinished ? <CheckCircle2 size={18} /> : <Play size={14} className="ml-0.5" />}
                     </div>
                     <div className="flex-1">
-                      <h4 className={`font-bold text-sm ${isFinished ? 'text-slate-400 line-through decoration-slate-600' : 'text-white'}`}>{chap.title}</h4>
+                      <h4 className={`font-bold text-sm leading-snug ${isFinished ? 'text-slate-400 line-through decoration-slate-600' : 'text-white'}`}>{chap.title}</h4>
                       <span className="text-[10px] text-slate-500 flex items-center gap-1 mt-1"><Clock size={10}/> {chap.duration}</span>
                     </div>
                   </div>
@@ -340,76 +451,116 @@ export default function App() {
           </div>
         )}
 
-        {/* --- 4. LECTURE D'UNE LEÇON (Plein écran) --- */}
+        {/* --- 4. LECTURE D'UNE LEÇON (PLEIN ÉCRAN) --- */}
         {activeLesson && (
           <div className="animate-in slide-in-from-bottom h-full flex flex-col absolute inset-0 bg-slate-900 z-[100]">
-            <header className="p-6 flex justify-between items-center border-b border-white/5 bg-slate-950">
-              <div className="flex items-center gap-3 text-amber-500 font-bold"><BookOpen size={20}/> Leçon</div>
-              <button onClick={() => setActiveLesson(null)} className="p-2 bg-slate-800 rounded-full text-white"><X size={20}/></button>
+            <header className="p-6 flex justify-between items-center border-b border-white/5 bg-slate-950 shrink-0">
+              <div className="flex items-center gap-3 text-amber-500 font-bold"><BookOpen size={20}/> Lecture en cours</div>
+              <button onClick={() => setActiveLesson(null)} className="p-2 bg-slate-800 rounded-full text-white hover:bg-slate-700"><X size={20}/></button>
             </header>
-            <div className="flex-1 p-6 overflow-y-auto">
-              <h2 className="text-3xl font-black text-white mb-6 leading-tight">{activeLesson.title}</h2>
-              <div className="bg-slate-950 p-6 rounded-3xl border border-slate-800 text-slate-300 text-base leading-relaxed whitespace-pre-wrap">
+            <div className="flex-1 p-6 overflow-y-auto custom-scroll">
+              <h2 className="text-3xl font-black text-white mb-8 leading-tight">{activeLesson.title}</h2>
+              <div className="text-slate-300 text-lg leading-relaxed whitespace-pre-wrap font-medium">
                 {activeLesson.content}
               </div>
             </div>
-            <div className="p-6 bg-slate-950 border-t border-white/5">
+            <div className="p-6 bg-slate-950 border-t border-white/5 shrink-0">
               {!userProfile.completedLessons.includes(activeLesson.id) ? (
-                <button onClick={() => finishLesson(activeLesson.id)} className="w-full bg-amber-500 text-slate-950 py-4 rounded-xl font-black uppercase tracking-widest flex items-center justify-center gap-2">
+                <button onClick={() => finishLesson(activeLesson.id)} className="w-full bg-amber-500 text-slate-950 py-4 rounded-xl font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-amber-400 transition">
                   <Check size={20}/> J'ai compris, terminer
                 </button>
               ) : (
-                <button onClick={() => setActiveLesson(null)} className="w-full bg-slate-800 text-white py-4 rounded-xl font-black uppercase tracking-widest">Fermer</button>
+                <button onClick={() => setActiveLesson(null)} className="w-full bg-slate-800 text-white py-4 rounded-xl font-black uppercase tracking-widest hover:bg-slate-700 transition">Fermer la leçon</button>
               )}
             </div>
           </div>
         )}
 
-        {/* --- 5. OUTILS (Calculatrices) --- */}
+        {/* --- ONGLET 3 : BOÎTE À OUTILS --- */}
         {activeTab === 'tools' && !selectedModule && !activeLesson && (
           <div className="animate-in fade-in p-6 space-y-6">
             <h1 className="text-3xl font-black text-white mb-1">Boîte à Outils</h1>
+            <p className="text-slate-400 text-sm mb-6">Calculatrices de précision pour vos commandes.</p>
+
             <div className="flex bg-slate-900 rounded-2xl p-1 border border-slate-800">
-              <button onClick={()=>setToolTab('dalle')} className={`flex-1 py-3 rounded-xl text-xs font-bold ${toolTab === 'dalle' ? 'bg-amber-500 text-slate-950' : 'text-slate-400'}`}>Dalle</button>
-              <button onClick={()=>setToolTab('mur')} className={`flex-1 py-3 rounded-xl text-xs font-bold ${toolTab === 'mur' ? 'bg-amber-500 text-slate-950' : 'text-slate-400'}`}>Mur</button>
+              <button onClick={()=>setToolTab('dalle')} className={`flex-1 py-3 rounded-xl text-xs font-bold transition-colors ${toolTab === 'dalle' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}>Béton</button>
+              <button onClick={()=>setToolTab('mur')} className={`flex-1 py-3 rounded-xl text-xs font-bold transition-colors ${toolTab === 'mur' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}>Parpaings</button>
             </div>
 
+            {/* Outil 1 : Dalle Béton */}
             {toolTab === 'dalle' && (
-              <div className="bg-slate-900 border border-slate-800 rounded-[2rem] p-6">
-                <h2 className="text-lg font-black text-white mb-4 flex items-center gap-2"><Truck className="text-amber-500"/> Béton (350kg/m³)</h2>
+              <div className="bg-slate-900 border border-slate-800 rounded-[2rem] p-6 animate-in zoom-in-95 duration-200">
+                <h2 className="text-lg font-black text-white mb-6 flex items-center gap-3"><Truck className="text-amber-500" size={24}/> Dalle (350kg/m³)</h2>
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <div><label className="text-[10px] font-black uppercase text-slate-500 mb-2 block">Long. (m)</label><input type="number" value={calcLength} onChange={e=>setCalcLength(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-amber-500" /></div>
-                    <div><label className="text-[10px] font-black uppercase text-slate-500 mb-2 block">Larg. (m)</label><input type="number" value={calcWidth} onChange={e=>setCalcWidth(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-amber-500" /></div>
+                    <div>
+                      <label className="text-[10px] font-black uppercase text-slate-500 mb-2 block">Long. (m)</label>
+                      <input type="number" value={calcLength} onChange={e=>setCalcLength(e.target.value)} placeholder="Ex: 5" className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-amber-500 transition" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black uppercase text-slate-500 mb-2 block">Larg. (m)</label>
+                      <input type="number" value={calcWidth} onChange={e=>setCalcWidth(e.target.value)} placeholder="Ex: 4" className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-amber-500 transition" />
+                    </div>
                   </div>
-                  <div><label className="text-[10px] font-black uppercase text-slate-500 mb-2 block">Épaisseur (cm)</label><input type="number" value={calcDepth} onChange={e=>setCalcDepth(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-amber-500" /></div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-500 mb-2 block">Épaisseur (cm)</label>
+                    <input type="number" value={calcDepth} onChange={e=>setCalcDepth(e.target.value)} placeholder="Ex: 12" className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-amber-500 transition" />
+                  </div>
                 </div>
+
                 {calcConcrete && (
-                  <div className="mt-6 bg-slate-800 rounded-2xl overflow-hidden border border-slate-700">
-                    <div className="bg-amber-500 text-slate-950 text-center py-2 font-black">{calcConcrete.vol} m³ de béton</div>
-                    <div className="p-4 grid grid-cols-2 gap-2 text-center">
-                      <div className="bg-slate-900 p-2 rounded-lg"><div className="font-black text-lg">{calcConcrete.ciment}</div><div className="text-[9px] text-slate-400">SACS (35kg)</div></div>
-                      <div className="bg-slate-900 p-2 rounded-lg"><div className="font-black text-lg">{calcConcrete.sable}</div><div className="text-[9px] text-slate-400">KG SABLE</div></div>
-                      <div className="bg-slate-900 p-2 rounded-lg"><div className="font-black text-lg">{calcConcrete.gravier}</div><div className="text-[9px] text-slate-400">KG GRAVIER</div></div>
-                      <div className="bg-slate-900 p-2 rounded-lg"><div className="font-black text-lg">{calcConcrete.eau}</div><div className="text-[9px] text-slate-400">LITRES EAU</div></div>
+                  <div className="mt-8 bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 shadow-xl">
+                    <div className="bg-amber-500 text-slate-950 text-center py-3 font-black text-xl">{calcConcrete.vol} m³ <span className="text-sm">de béton</span></div>
+                    <div className="p-4 grid grid-cols-2 gap-3 text-center">
+                      <div className="bg-slate-900 p-3 rounded-xl border border-slate-700/50">
+                        <div className="font-black text-2xl text-white">{calcConcrete.ciment}</div>
+                        <div className="text-[9px] text-slate-400 font-bold uppercase mt-1">Sacs (35kg)</div>
+                      </div>
+                      <div className="bg-slate-900 p-3 rounded-xl border border-slate-700/50">
+                        <div className="font-black text-2xl text-white">{calcConcrete.sable}</div>
+                        <div className="text-[9px] text-slate-400 font-bold uppercase mt-1">Kg Sable</div>
+                      </div>
+                      <div className="bg-slate-900 p-3 rounded-xl border border-slate-700/50">
+                        <div className="font-black text-2xl text-white">{calcConcrete.gravier}</div>
+                        <div className="text-[9px] text-slate-400 font-bold uppercase mt-1">Kg Gravier</div>
+                      </div>
+                      <div className="bg-slate-900 p-3 rounded-xl border border-slate-700/50">
+                        <div className="font-black text-2xl text-white">{calcConcrete.eau}</div>
+                        <div className="text-[9px] text-slate-400 font-bold uppercase mt-1">Litres Eau</div>
+                      </div>
                     </div>
                   </div>
                 )}
               </div>
             )}
+
+            {/* Outil 2 : Mur en Parpaings */}
             {toolTab === 'mur' && (
-              <div className="bg-slate-900 border border-slate-800 rounded-[2rem] p-6">
-                <h2 className="text-lg font-black text-white mb-4 flex items-center gap-2"><Box className="text-orange-500"/> Parpaings (20x50)</h2>
+              <div className="bg-slate-900 border border-slate-800 rounded-[2rem] p-6 animate-in zoom-in-95 duration-200">
+                <h2 className="text-lg font-black text-white mb-6 flex items-center gap-3"><Box className="text-orange-500" size={24}/> Mur Agglos (20x50)</h2>
                 <div className="space-y-4">
-                  <div><label className="text-[10px] font-black uppercase text-slate-500 mb-2 block">Longueur mur (m)</label><input type="number" value={wallLength} onChange={e=>setWallLength(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-orange-500" /></div>
-                  <div><label className="text-[10px] font-black uppercase text-slate-500 mb-2 block">Hauteur mur (m)</label><input type="number" value={wallHeight} onChange={e=>setWallHeight(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-orange-500" /></div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-500 mb-2 block">Longueur du mur (m)</label>
+                    <input type="number" value={wallLength} onChange={e=>setWallLength(e.target.value)} placeholder="Ex: 10" className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-orange-500 transition" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-500 mb-2 block">Hauteur du mur (m)</label>
+                    <input type="number" value={wallHeight} onChange={e=>setWallHeight(e.target.value)} placeholder="Ex: 2.5" className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-orange-500 transition" />
+                  </div>
                 </div>
+
                 {calcWall && (
-                  <div className="mt-6 bg-slate-800 rounded-2xl overflow-hidden border border-slate-700">
-                    <div className="bg-orange-500 text-slate-950 text-center py-2 font-black">{calcWall.area} m² au total</div>
-                    <div className="p-4 grid grid-cols-2 gap-2 text-center">
-                      <div className="bg-slate-900 p-2 rounded-lg"><div className="font-black text-2xl text-orange-500">{calcWall.blocks}</div><div className="text-[9px] text-slate-400">PARPAINGS (+5%)</div></div>
-                      <div className="bg-slate-900 p-2 rounded-lg"><div className="font-black text-2xl text-white">{calcWall.mortar}</div><div className="text-[9px] text-slate-400">LITRES MORTIER</div></div>
+                  <div className="mt-8 bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 shadow-xl">
+                    <div className="bg-orange-500 text-slate-950 text-center py-3 font-black text-xl">{calcWall.area} m² <span className="text-sm">au total</span></div>
+                    <div className="p-4 grid grid-cols-2 gap-3 text-center">
+                      <div className="bg-slate-900 p-4 rounded-xl border border-slate-700/50">
+                        <div className="font-black text-3xl text-orange-500 mb-1">{calcWall.blocks}</div>
+                        <div className="text-[9px] text-slate-400 font-bold uppercase">Parpaings (Marge +5%)</div>
+                      </div>
+                      <div className="bg-slate-900 p-4 rounded-xl border border-slate-700/50">
+                        <div className="font-black text-3xl text-white mb-1">{calcWall.mortar}</div>
+                        <div className="text-[9px] text-slate-400 font-bold uppercase">Litres Mortier</div>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -418,25 +569,96 @@ export default function App() {
           </div>
         )}
 
+        {/* --- ONGLET 4 : GLOSSAIRE --- */}
+        {activeTab === 'glossary' && !selectedModule && !activeLesson && (
+          <div className="animate-in fade-in duration-500 p-6 space-y-6 flex flex-col min-h-full">
+            <div>
+              <h1 className="text-3xl font-black text-white mb-1">Le Dico du Chantier</h1>
+              <p className="text-slate-400 text-sm">30 termes essentiels à maîtriser.</p>
+            </div>
+
+            <div className="relative group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-amber-500 transition-colors" size={20} />
+              <input 
+                type="text" placeholder="Rechercher (ex: Arase)..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-800 rounded-2xl py-4 pl-12 pr-4 text-white outline-none focus:border-amber-500 transition shadow-lg" 
+              />
+            </div>
+
+            <div className="space-y-4 pb-8">
+              {GLOSSAIRE.filter(item => item.term.toLowerCase().includes(searchQuery.toLowerCase()) || item.def.toLowerCase().includes(searchQuery.toLowerCase())).map((item, idx) => (
+                <div key={idx} className="bg-slate-900 border border-slate-800 p-5 rounded-2xl hover:border-amber-500/30 transition-colors">
+                  <h3 className="font-black text-amber-500 mb-2 text-lg">{item.term}</h3>
+                  <p className="text-sm text-slate-300 leading-relaxed font-medium">{item.def}</p>
+                </div>
+              ))}
+              {GLOSSAIRE.filter(item => item.term.toLowerCase().includes(searchQuery.toLowerCase()) || item.def.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
+                <p className="text-center text-slate-500 mt-10">Aucun terme trouvé.</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* --- ONGLET 5 : PROFIL (Paramètres & Badges) --- */}
+        {activeTab === 'profile' && !selectedModule && !activeLesson && (
+          <div className="animate-in fade-in p-6 space-y-8">
+            <h1 className="text-3xl font-black text-white">Mon Espace</h1>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-[2rem] p-6 text-center shadow-lg">
+              <div className="w-24 h-24 rounded-full border-4 border-slate-800 bg-slate-950 overflow-hidden mx-auto mb-4">
+                <img src={userProfile.avatar} alt="Avatar" className="w-full h-full object-cover"/>
+              </div>
+              <h2 className="text-2xl font-black text-white mb-1">{userProfile.name}</h2>
+              <span className="bg-amber-500/20 text-amber-500 px-4 py-1.5 rounded-full text-xs font-bold border border-amber-500/30 inline-block">{userProfile.level}</span>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-[2rem] p-6">
+              <h3 className="text-[10px] font-black uppercase text-slate-500 mb-4 flex items-center gap-2"><Trophy size={14}/> Badges Débloqués ({unlockedBadgesCount}/{BADGES.length})</h3>
+              <div className="grid grid-cols-2 gap-3">
+                {badgesWithStatus.map((b) => (
+                  <div key={b.id} className={`p-4 rounded-2xl border flex flex-col items-center text-center transition-all ${b.unlocked ? 'bg-amber-500/10 border-amber-500/30 text-amber-500' : 'bg-slate-950 border-slate-800 opacity-50 text-slate-600'}`}>
+                      <div className="mb-2">{b.icon}</div>
+                      <div className={`text-xs font-black mb-1 ${b.unlocked ? 'text-white' : 'text-slate-500'}`}>{b.name}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <button onClick={() => {
+                if(window.confirm("Êtes-vous sûr de vouloir effacer toute votre progression ?")) {
+                  localStorage.removeItem('batipro_v5_profile');
+                  window.location.reload();
+                }
+              }} 
+              className="w-full bg-rose-500/10 border border-rose-500/20 text-rose-500 py-4 rounded-xl font-bold hover:bg-rose-500/20 transition"
+            >
+              Réinitialiser ma progression
+            </button>
+          </div>
+        )}
+
       </main>
 
-      {/* NAV BOTTOM */}
+      {/* NAVIGATION BOTTOM */}
       <nav className="absolute bottom-0 w-full bg-slate-950/95 backdrop-blur-2xl border-t border-slate-800/50 flex justify-around items-center pt-3 pb-6 px-1 z-40">
         {[
-          { id: 'home', icon: <User size={22} />, label: 'Profil' },
-          { id: 'courses', icon: <BookOpen size={22} />, label: 'Cours' },
-          { id: 'tools', icon: <Calculator size={22} />, label: 'Outils' }
+          { id: 'home', icon: <HardHat size={22} strokeWidth={activeTab === 'home' ? 2.5 : 2} />, label: 'Accueil' },
+          { id: 'courses', icon: <BookOpen size={22} strokeWidth={activeTab === 'courses' ? 2.5 : 2} />, label: 'Cours' },
+          { id: 'tools', icon: <Calculator size={22} strokeWidth={activeTab === 'tools' ? 2.5 : 2} />, label: 'Outils' },
+          { id: 'glossary', icon: <BookOpen size={22} strokeWidth={activeTab === 'glossary' ? 2.5 : 2} />, label: 'Dico' },
+          { id: 'profile', icon: <User size={22} strokeWidth={activeTab === 'profile' ? 2.5 : 2} />, label: 'Profil' }
         ].map(item => (
           <button 
             key={item.id}
             onClick={() => {setActiveTab(item.id); setSelectedModule(null); setActiveLesson(null);}} 
-            className={`flex flex-col items-center gap-1 w-1/3 transition-all duration-300 ${activeTab === item.id ? 'text-amber-500' : 'text-slate-500 hover:text-slate-300'}`}
+            className={`flex flex-col items-center gap-1.5 w-1/5 transition-all duration-300 ${activeTab === item.id ? 'text-amber-500 scale-110' : 'text-slate-500 hover:text-slate-300'}`}
           >
             {item.icon}
-            <span className="text-[9px] font-black uppercase tracking-wider">{item.label}</span>
+            <span className="text-[8px] font-black uppercase tracking-wider">{item.label}</span>
           </button>
         ))}
       </nav>
     </div>
   );
 }
+
